@@ -141,6 +141,15 @@ if __name__ == '__main__':
     hqh = FranHQHistory(d_num)
     fr = FranBranch(d_num)
 
+    y = 2023
+    fm.download(y)
+    time.sleep(2)
+    hq.download(y)
+    time.sleep(2)
+    fr.download(y)
+    time.sleep(2)
+
+    '''
     for y in range(2017, 2024):
         fm.download(y)
         time.sleep(2)
@@ -148,7 +157,9 @@ if __name__ == '__main__':
         time.sleep(2)
         fr.download(y)
         time.sleep(2)
+    
 
     for y in range(2022, 2024):
         hqh.download(y)
         time.sleep(2)
+    '''
