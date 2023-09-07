@@ -134,7 +134,7 @@ class Bohum(DataGo):
 
 if __name__ == '__main__':
     d_num = datetime.datetime.now().strftime('%m%d_%H%M')
-    # Bohum(d_num).download()
+    Bohum(d_num).download()
 
     fm = FranMas(d_num)
     hq = FranHQ(d_num)
