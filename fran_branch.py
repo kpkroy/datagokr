@@ -1,7 +1,7 @@
-import requests
 import time
 import pandas as pd
 import datetime
+import os
 
 
 class DataGo:
@@ -14,6 +14,7 @@ class DataGo:
         self.year = ''
         self.date_num = date_num
         self.start_page_num = 0
+        self.work_dir = os.path.join(os.getcwd(), 'data')
 
     def req_to_df(self, req):
         if self.p['resultType'] == 'json':
@@ -132,8 +133,19 @@ class Bohum(DataGo):
         self.p['numOfRows'] = 100000
 
 
+def mk_dir(date_num, work_dir='data'):
+    wd = os.path.join(os.getcwd(), work_dir)
+    if not os.path.isdir(wd):
+        os.mkdir(wd)
+    date_dir = os.path.join(wd, date_num)
+    if not os.path.isdir(date_dir):
+        os.mkdir(date_dir)
+
+
 if __name__ == '__main__':
     d_num = datetime.datetime.now().strftime('%m%d_%H%M')
+    mk_dir(d_num)
+           
     Bohum(d_num).download()
 
     fm = FranMas(d_num)
@@ -149,17 +161,3 @@ if __name__ == '__main__':
     fr.download(y)
     time.sleep(2)
 
-    '''
-    for y in range(2017, 2024):
-        fm.download(y)
-        time.sleep(2)
-        hq.download(y)
-        time.sleep(2)
-        fr.download(y)
-        time.sleep(2)
-    
-
-    for y in range(2022, 2024):
-        hqh.download(y)
-        time.sleep(2)
-    '''
