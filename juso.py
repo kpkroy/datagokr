@@ -276,6 +276,7 @@ class JusoXyCsvHandler:
 
     def create_csv(self, addr_col_name: str, ifp: str, work_dir: str, out_name: str, api_name: str):
         df = pd.read_csv(ifp, encoding='utf-8-sig', delimiter='|')
+        df.dropna(subset=[addr_col_name], inplace=True)
         table = df.to_dict('records')
         if not table:
             return
@@ -289,6 +290,8 @@ class JusoXyCsvHandler:
 
         for row in table:
             addr = row.get(addr_col_name)
+            if not addr:
+                continue
             use_api.hit_api(addr)
             row.update(use_api.get_result())
             ec.add_chunk([row])
