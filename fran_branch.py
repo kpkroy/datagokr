@@ -19,15 +19,23 @@ class DataGo:
         self.start_page_num = 0
         self.work_dir = os.path.join(os.getcwd(), work_dir)
 
-    def compare(self, prev_num):
-        fp_now = os.path.join(self.work_dir, self.get_file_name(self.date_num))
+    def get_update(self, prev_num, now_num=None):
+        if now_num is None:
+            now_num = self.date_num
+        fp_now = os.path.join(self.work_dir, self.get_file_name(now_num))
         fp_prev = os.path.join(self.work_dir, self.get_file_name(prev_num))
-        df_now = pd.read_csv(fp_now)
-        df_prev = pd.read_csv(fp_prev)
+        use_cols = ['addr', 'saeopjangNm', 'saeopjaDrno']
+        d_types = {'addr': 'string', 'saeopjangNm': 'string', 'saeopjangDrno': float}
+
+        df_now = pd.read_csv(fp_now, encoding='utf-8-sig', dtype=d_types, usecols=use_cols)
+        df_prev = pd.read_csv(fp_prev, encoding='utf-8-sig', dtype=d_types, usecols=use_cols)
+        df_now.drop_duplicates(inplace=True)
+        df_prev.drop_duplicates(inplace=True)
 
         # Find rows in B that are not in A
-        new_rows_in_b = df_now[~df_now.isin(df_prev)].dropna()
-
+        b = df_now.merge(df_prev, how='left', indicator=True).loc[lambda x: x['_merge'] == 'left_only'].drop('_merge', axis=1)
+        updated_fp = os.path.join(self.work_dir, self.get_file_name(self.date_num, '_update'))
+        b.to_csv(updated_fp, encoding='utf-8-sig')
 
     def convert_req_to_df(self, req):
         if self.p['resultType'] == 'json':
@@ -43,11 +51,7 @@ class DataGo:
         self.start_page_num = start_page
 
     def get_file_name(self, date_num, post_fix=''):
-        if post_fix:
-            return f'{date_num}_{self.name}_{self.year}_{post_fix}.csv'
-        else:
-            return f'{date_num}_{self.name}_{self.year}.csv'
-        return '{0}_{1}_{2}.csv'.format(date_num, self.name, self.year)
+        return f'{date_num}_{self.name}_{self.year}{post_fix}.csv'
 
     def export_to_work_dir(self, df: pd.DataFrame):
         file_name = self.get_file_name(self.date_num)
@@ -163,9 +167,10 @@ class CompanyInfoApi:
         self.b = Bohum(date_n)
         self.fm = FranMas(date_n)
         self.hq = FranHQ(date_n)
-        self.hqh = FranHQHistory(date_n)
         self.fr = FranBranch(date_n)
         self.year = year
+
+        self.hqh = FranHQHistory(date_n)
 
     def mk_dir(self, work_dir='data'):
         wd = os.path.join(os.getcwd(), work_dir)
@@ -183,27 +188,15 @@ class CompanyInfoApi:
         self.fr.download(self.year)
         time.sleep(2)
 
-    def get_new(self, prev_num):
-        self.download()
-
+    def get_updated(self, prev_num, now_num=None):
+        self.b.get_update(prev_num, now_num)
+        self.fm.get_update(prev_num, now_num)
+        self.hq.get_update(prev_num, now_num)
+        self.fr.get_update(prev_num, now_num)
 
 
 if __name__ == '__main__':
     d_num = datetime.datetime.now().strftime('%m%d_%H%M')
     c = CompanyInfoApi(d_num)
-    c.download()
-    '''
-    Bohum(d_num).download()
-    fm = FranMas(d_num)
-    hq = FranHQ(d_num)
-    hqh = FranHQHistory(d_num)
-    fr = FranBranch(d_num)
-
-    y = 2023
-    fm.download(y)
-    time.sleep(2)
-    hq.download(y)
-    time.sleep(2)
-    fr.download(y)
-    time.sleep(2)
-    '''
+    # c.download()
+    c.get_updated('0628_1954', '0913_1751')
