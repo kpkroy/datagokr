@@ -2,10 +2,13 @@ import time
 import pandas as pd
 import datetime
 import os
+import requests
+import lxml
+import argparse
 
 
 class DataGo:
-    def __init__(self, date_num=''):
+    def __init__(self, date_num='', work_dir='data'):
         self.name = 'Datago'
         self.s_key = 'RPhzV1mq7cMIwWp4intcHUvyvIQKhxPCCIbtbna1FfD23yFJFnbktcEVbX/auQgrruR2bWz0bhom1lGPjJdg6Q=='
         self.end_point = ''
@@ -14,9 +17,19 @@ class DataGo:
         self.year = ''
         self.date_num = date_num
         self.start_page_num = 0
-        self.work_dir = os.path.join(os.getcwd(), 'data')
+        self.work_dir = os.path.join(os.getcwd(), work_dir)
 
-    def req_to_df(self, req):
+    def compare(self, prev_num):
+        fp_now = os.path.join(self.work_dir, self.get_file_name(self.date_num))
+        fp_prev = os.path.join(self.work_dir, self.get_file_name(prev_num))
+        df_now = pd.read_csv(fp_now)
+        df_prev = pd.read_csv(fp_prev)
+
+        # Find rows in B that are not in A
+        new_rows_in_b = df_now[~df_now.isin(df_prev)].dropna()
+
+
+    def convert_req_to_df(self, req):
         if self.p['resultType'] == 'json':
             return pd.DataFrame.from_dict(req.json().get('items'))
         elif self.p['resultType'] == 'xml':
@@ -29,11 +42,23 @@ class DataGo:
     def set_starting_page_num(self, start_page: int):
         self.start_page_num = start_page
 
+    def get_file_name(self, date_num, post_fix=''):
+        if post_fix:
+            return f'{date_num}_{self.name}_{self.year}_{post_fix}.csv'
+        else:
+            return f'{date_num}_{self.name}_{self.year}.csv'
+        return '{0}_{1}_{2}.csv'.format(date_num, self.name, self.year)
+
+    def export_to_work_dir(self, df: pd.DataFrame):
+        file_name = self.get_file_name(self.date_num)
+        fp = os.path.join(self.work_dir, file_name)
+        df.to_csv(fp, encoding='utf-8-sig')
+        print('.... EXPORTED [{1}] {0} rows'.format(len(df), file_name))
+
     def download(self, year=0):
         if year:
             self.set_year(year)
         page_num = self.start_page_num
-
         df = pd.DataFrame()
         while True:
             time.sleep(2)
@@ -44,10 +69,7 @@ class DataGo:
             df = pd.concat([df, new_df])
             if len(new_df) < self.p['numOfRows']:
                 break
-
-        file_name = '{0}_{1}_{2}.csv'.format(self.date_num, self.name, self.year)
-        df.to_csv(file_name, encoding='utf-8-sig')
-        print('.... EXPORTED [{1}] {0} rows'.format(len(df), file_name))
+        self.export_to_work_dir(df)
 
     def get_page_data(self):
         retry_count = 0
@@ -57,9 +79,10 @@ class DataGo:
 
         while retry_count < 4:
             try:
-                new_df = self.req_to_df(req)
+                new_df = self.convert_req_to_df(req)
                 break
             except Exception as e:
+                print(e)
                 time.sleep(2)
                 retry_count += 1
                 req = requests.get(self.end_point, params=self.p)
@@ -133,21 +156,44 @@ class Bohum(DataGo):
         self.p['numOfRows'] = 100000
 
 
-def mk_dir(date_num, work_dir='data'):
-    wd = os.path.join(os.getcwd(), work_dir)
-    if not os.path.isdir(wd):
-        os.mkdir(wd)
-    date_dir = os.path.join(wd, date_num)
-    if not os.path.isdir(date_dir):
-        os.mkdir(date_dir)
+class CompanyInfoApi:
+    def __init__(self, date_n=None, year=2023):
+        if date_n is None:
+            date_n = datetime.datetime.now().strftime('%m%d_%H%M')
+        self.b = Bohum(date_n)
+        self.fm = FranMas(date_n)
+        self.hq = FranHQ(date_n)
+        self.hqh = FranHQHistory(date_n)
+        self.fr = FranBranch(date_n)
+        self.year = year
+
+    def mk_dir(self, work_dir='data'):
+        wd = os.path.join(os.getcwd(), work_dir)
+        if not os.path.isdir(wd):
+            os.mkdir(wd)
+
+    def download(self):
+        self.mk_dir()
+        self.b.download()
+        time.sleep(2)
+        self.fm.download(self.year)
+        time.sleep(2)
+        self.hq.download(self.year)
+        time.sleep(2)
+        self.fr.download(self.year)
+        time.sleep(2)
+
+    def get_new(self, prev_num):
+        self.download()
+
 
 
 if __name__ == '__main__':
     d_num = datetime.datetime.now().strftime('%m%d_%H%M')
-    mk_dir(d_num)
-           
+    c = CompanyInfoApi(d_num)
+    c.download()
+    '''
     Bohum(d_num).download()
-
     fm = FranMas(d_num)
     hq = FranHQ(d_num)
     hqh = FranHQHistory(d_num)
@@ -160,4 +206,4 @@ if __name__ == '__main__':
     time.sleep(2)
     fr.download(y)
     time.sleep(2)
-
+    '''
