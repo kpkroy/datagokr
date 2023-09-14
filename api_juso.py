@@ -177,7 +177,7 @@ class VworldXy:
                     self.col_y: self.get_y(),
                     }
         else:
-            print(f"[error] vworld coord with address : {self.p['address']}")
+            print(f"[error] : {self.p['address']}")
             self.error_list.append(self.p['address'])
             return {self.col_x: '',
                     self.col_y: '',
