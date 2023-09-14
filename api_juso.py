@@ -310,7 +310,8 @@ class JusoXyCsvHandler:
                 use_api.hit_api(addr_)
             row.update(use_api.get_result())
             if i % 1000 == 0:
-                print(f'processing table num {i}')
+                now_time = datetime.datetime.now().strftime('%m%d_%H%M')
+                print(f'[{now_time}] processing table num {i}')
             ec.add_chunk([row])
         ec.export_csv_local()
         use_api.export_errors(work_dir, out_name)
