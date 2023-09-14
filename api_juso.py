@@ -284,9 +284,12 @@ class JusoXyCsvHandler:
     def __init__(self):
         self.api_type = {'juso': JusoSearch(), 'xy': VworldXy()}
 
-    def create_csv(self, addr_col_name: str, ifp: str, work_dir: str, out_name: str, api_name: str):
+    def create_csv(self, addr_col_name: str, ifp: str, work_dir: str, out_name: str, api_name: str,
+                   start_from=None, start_col=None):
         df = pd.read_csv(ifp, encoding='utf-8-sig')
         df.dropna(subset=[addr_col_name], inplace=True)
+        if start_from:
+            df = df[df[start_col] > start_from]
         table = df.to_dict('records')
         if not table:
             return
@@ -340,4 +343,5 @@ if __name__ == '__main__':
     o_name = f'{d_num}_result.csv'
 
     c = JusoXyCsvHandler()
-    c.create_csv(addr_, input_file_path, wd, o_name, 'xy')
+    c.create_csv(addr_, input_file_path, wd, o_name, 'xy', )
+    # c.create_csv(addr_, input_file_path, wd, o_name, 'xy', 1000, 'id')
