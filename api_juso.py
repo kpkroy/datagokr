@@ -3,6 +3,7 @@ import pandas as pd
 import os
 from export_chunker import ExportChunker
 import datetime
+import time
 
 
 class VworldFran:
@@ -79,9 +80,9 @@ class VworldFran:
             print('error on')
     # todo : loop through pages
 
-    def export_errors(self):
-        d_num = datetime.datetime.now().strftime('%m%d_%H%M')
-        with open(f'errors_{d_num}.txt', 'w') as file:
+    def export_errors(self, work_dir, out_name):
+        fp = os.path.join(work_dir, 'error_' + out_name)
+        with open(fp, 'w') as file:
             for item in self.error_list:
                 file.write('%s\n' % item)
 
@@ -116,7 +117,12 @@ class VworldXy:
         self.p['type'] = j_type
 
         response = requests.get(self.api_url, params=self.p)
-        self.current_result = response.json()
+        try:
+            self.current_result = response.json()
+        except Exception as e:
+            time.sleep(2)
+            print(f'Request Parsing Error : {e}')
+            self.error_list.append(e)
 
         if not self.is_ok():
             self.p['type'] = self.alt_type.get(j_type)
@@ -170,7 +176,7 @@ class VworldXy:
                     self.col_y: self.get_y(),
                     }
         else:
-            print(f"[coord] error with address : {self.p['address']}")
+            print(f"[error] vworld coord with address : {self.p['address']}")
             self.error_list.append(self.p['address'])
             return {self.col_x: '',
                     self.col_y: '',
@@ -183,9 +189,9 @@ class VworldXy:
     def get_col_names(self):
         return [self.col_refined, self.col_type, self.col_d1, self.col_d2, self.col_d3, self.col_x, self.col_y]
 
-    def export_errors(self):
-        d_num = datetime.datetime.now().strftime('%m%d_%H%M')
-        with open(f'errors_{d_num}.txt', 'w') as file:
+    def export_errors(self, work_dir, out_name):
+        fp = os.path.join(work_dir, 'error_' + out_name)
+        with open(fp, 'w') as file:
             for item in self.error_list:
                 file.write('%s\n' % item)
 
@@ -263,9 +269,9 @@ class JusoSearch:
         except Exception as e:
             return False
 
-    def export_errors(self):
-        d_num = datetime.datetime.now().strftime('%m%d_%H%M')
-        with open(f'errors_{d_num}.txt', 'w') as file:
+    def export_errors(self, work_dir, out_name):
+        fp = os.path.join(work_dir, 'error_' + out_name)
+        with open(fp, 'w') as file:
             for item in self.error_list:
                 file.write('%s\n' % item)
 
@@ -275,7 +281,7 @@ class JusoXyCsvHandler:
         self.api_type = {'juso': JusoSearch(), 'xy': VworldXy()}
 
     def create_csv(self, addr_col_name: str, ifp: str, work_dir: str, out_name: str, api_name: str):
-        df = pd.read_csv(ifp, encoding='utf-8-sig', delimiter='|')
+        df = pd.read_csv(ifp, encoding='utf-8-sig')
         df.dropna(subset=[addr_col_name], inplace=True)
         table = df.to_dict('records')
         if not table:
@@ -288,18 +294,26 @@ class JusoXyCsvHandler:
         ec = ExportChunker(export_path=work_dir, export_file_name=out_name)
         ec.set_field_name(field_names)
 
+        i = 0
         for row in table:
+            i += 1
             addr = row.get(addr_col_name)
             if not addr:
                 continue
             use_api.hit_api(addr)
+            if not use_api.has_result() and '(' in addr:
+                addr_ = addr.split('(')[0]
+                use_api.hit_api(addr_)
             row.update(use_api.get_result())
+            if i % 1000 == 0:
+                print(f'processing table num {i}')
             ec.add_chunk([row])
         ec.export_csv_local()
-        use_api.export_errors()
+        use_api.export_errors(work_dir, out_name)
 
 
 if __name__ == '__main__':
+    '''
     a = JusoSearch()
     j = '인천광역시 연수구 청학동 567-4'
     a.hit_api(j)
@@ -309,11 +323,13 @@ if __name__ == '__main__':
     k = '경상남도 창녕군 대합면 등지리 888'
     b.hit_api(k, j_type='parcel')
     print(b.get_result())
+    '''
 
-    addr_ = 'company_address'
-    input_file_path = os.path.join('data', 'company_test.txt')
+    addr_ = 'addr'
+    input_file_path = os.path.join('data', 'brno_c_0.csv')
     wd = 'data'
-    o_name = 'test.csv'
+    d_num = datetime.datetime.now().strftime('%m%d_%H%M')
+    o_name = f'{d_num}_result.csv'
 
     c = JusoXyCsvHandler()
     c.create_csv(addr_, input_file_path, wd, o_name, 'xy')

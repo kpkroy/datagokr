@@ -160,7 +160,7 @@ class Bohum(DataGo):
         self.p['numOfRows'] = 100000
 
 
-class CompanyInfoApi:
+class DataGoApi:
     def __init__(self, date_n=None, year=2023):
         if date_n is None:
             date_n = datetime.datetime.now().strftime('%m%d_%H%M')
@@ -168,8 +168,8 @@ class CompanyInfoApi:
         self.fm = FranMas(date_n)
         self.hq = FranHQ(date_n)
         self.fr = FranBranch(date_n)
-        self.year = year
 
+        self.year = year
         self.hqh = FranHQHistory(date_n)
 
     def mk_dir(self, work_dir='data'):
@@ -197,6 +197,6 @@ class CompanyInfoApi:
 
 if __name__ == '__main__':
     d_num = datetime.datetime.now().strftime('%m%d_%H%M')
-    c = CompanyInfoApi(d_num)
+    c = DataGoApi(d_num)
     # c.download()
     c.get_updated('0628_1954', '0913_1751')

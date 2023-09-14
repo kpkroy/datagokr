@@ -1,5 +1,5 @@
-from fran_branch import CompanyInfoApi as Cia
-from juso import JusoXyCsvHandler
+from api_datago import DataGoApi as Cia
+from api_juso import JusoXyCsvHandler
 import datetime
 
 
