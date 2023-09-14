@@ -4,6 +4,7 @@ import os
 from export_chunker import ExportChunker
 import datetime
 import time
+import re
 
 
 class VworldFran:
@@ -301,8 +302,10 @@ class JusoXyCsvHandler:
             if not addr:
                 continue
             use_api.hit_api(addr)
-            if not use_api.has_result() and '(' in addr:
+            if not use_api.has_result():
                 addr_ = addr.split('(')[0]
+                addr_ = re.sub(r'(\D)(\d)', r'\1 \2', addr_)
+                addr_ = addr_.replace('  ', ' ')
                 use_api.hit_api(addr_)
             row.update(use_api.get_result())
             if i % 1000 == 0:
