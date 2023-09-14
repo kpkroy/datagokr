@@ -90,6 +90,9 @@ class VworldFran:
 
 class VworldXy:
     def __init__(self):
+        keys = ['19D00DCE-5245-3A0A-A016-FEBB57784B06',
+                'BBBEA9AB-CA7E-3430-BEF2-404D8FD62BAC',
+                '56ADEBE7-7ABD-32DF-BBA5-3873FC1FAD4D']
         self.api_url = "https://api.vworld.kr/req/address?"
         self.p = {
             "service": "address",
@@ -99,7 +102,7 @@ class VworldXy:
             "address": "",
             "format": "json",
             "type": "road",
-            "key": "19D00DCE-5245-3A0A-A016-FEBB57784B06"
+            "key": keys[0]
         }
         self.alt_type = {'road': 'parcel', 'parcel': 'road'}
         self.current_result = None
