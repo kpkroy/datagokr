@@ -306,6 +306,7 @@ class JusoXyCsvHandler:
                 addr_ = addr.split('(')[0]
                 addr_ = re.sub(r'(\D)(\d)', r'\1 \2', addr_)
                 addr_ = addr_.replace('  ', ' ')
+                print(f'new addr : {addr_}')
                 use_api.hit_api(addr_)
             row.update(use_api.get_result())
             if i % 1000 == 0:
