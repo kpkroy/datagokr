@@ -1,7 +1,6 @@
 from api_common import ApiBlueprint
 import requests
 import os
-import datetime
 
 
 class VworldXy(ApiBlueprint):
@@ -85,7 +84,7 @@ class VworldXy(ApiBlueprint):
             return self.current_result['response']['refined']['structure']['level3']
         return self.current_result['response']['refined']['structure']['level4A']
 
-    def get_result(self):
+    def get_result(self, idx=0):
         if self.has_result():
             return {self.col_refined: self.get_refined(),
                     self.col_type: self.get_type(),
@@ -152,7 +151,7 @@ class VworldFran(ApiBlueprint):
     def get_col_names(self):
         col_list = self.use_cols
         for k, v in self.two_depth_cols:
-            col_list.append(v)
+            col_list.extend(v)
         return col_list
 
     def is_ok(self) -> bool:

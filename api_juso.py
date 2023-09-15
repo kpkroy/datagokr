@@ -48,9 +48,9 @@ class JusoAddr(ApiBlueprint):
         return result_list
 
     def get_result(self, idx=0):
-        ori_result = self.get_ori_result(idx).items()
+        ori_result = self.get_ori_result(idx)
         if ori_result:
-            return {self.col_rename.get(x): y for x, y in ori_result}
+            return {self.col_rename.get(x): y for x, y in ori_result.items()}
         return{}
 
     def get_ori_result(self, idx=0):
