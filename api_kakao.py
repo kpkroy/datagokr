@@ -10,9 +10,8 @@ class KakaoApi(ApiBlueprint):
         self.api_url = 'https://dapi.kakao.com/v2/local/search/address.'
         self.api = Local(service_key=self.token)
         self.use_cols = ['x', 'y']
-        self.two_depth_cols = {'address': ['b_code'],
-                               'road_address': ['address_name', 'building_name', 'region_1depth_name',
-                                                'region_2depth_name', 'region_3depth_name']}
+        self.two_depth_cols = {'address': ['b_code', 'region_1depth_name', 'region_2depth_name', 'region_3depth_name'],
+                               'road_address': ['address_name', 'building_name']}
         self.col_rename = {'address_name': 'refined', 'type': 'road', 'b_code': 'region_code',
                            'building_name': 'title', 'region_1depth_name': 'depth1', 'region_2depth_name': 'depth2',
                            'region_3depth_name': 'depth3', 'x': 'x', 'y': 'y', 'category': 'category', 'src': 'src'}
@@ -42,10 +41,14 @@ class KakaoApi(ApiBlueprint):
     def get_ori_result(self, idx=0):
         if self.has_result(idx):
             item = self.get_item_list()[idx]
-            rec = {col: item[col] for col in self.use_cols}
+            if item.get('address_type') != 'REGION':
+                rec = {col: item[col] for col in self.use_cols}
+            else:
+                rec = {col: '' for col in self.use_cols}    # if not road
             for col in self.two_depth_cols:
-                for in_col in self.two_depth_cols.get(col):
-                    rec[in_col] = item[col][in_col]
+                if col in item:
+                    for in_col in self.two_depth_cols.get(col):
+                        rec[in_col] = item[col][in_col]
             return rec
         return {}
 

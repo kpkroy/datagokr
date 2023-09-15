@@ -60,7 +60,7 @@ class ApiBlueprint:
 
         ec = ExportChunker(export_path=work_dir, export_file_name=out_name, begin_time=self.begin_time)
         ec.set_field_name(field_names)
-        ec.set_chunk_size(1)
+        ec.set_chunk_size(100)
         table = df.to_dict('records')
         empty_rec = {x: '' for x in self.get_col_names()}
         empty_rec['src'] = self.src
