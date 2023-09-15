@@ -14,11 +14,13 @@ class JusoAddr(ApiBlueprint):
         self.error_list = []
         self.param_xy = ['admCd', 'rnMgtSn', 'udrtYn', 'buldMnnm', 'buldSlno']
         self.col_rename = {'admCd': 'region_code', 'siNm': 'depth1', 'sggNm': 'depth2', 'emdNm': 'depth3',
-                           'bdNm': 'title', 'jibunAddr': 'parcel', 'roadAddr': 'road', 'detBdNmList': 'category'}
+                           'bdNm': 'title', 'jibunAddr': 'parcel', 'addr': 'road', 'detBdNmList': 'category'}
+        self.src = 'juso'
 
     def call_api(self, juso: str):
         self.p['keyword'] = juso
         req = requests.get(self.api_url, params=self.p)
+        self.quota_count += 1
         self.current_result = req.json()
 
     def has_result(self, idx=0):
@@ -55,11 +57,15 @@ class JusoAddr(ApiBlueprint):
 
     def get_ori_result(self, idx=0):
         if self.has_result(idx):
-            return {col: self.get_item_list()[idx][col] for col in self.use_cols}
+            ori_result = {col: self.get_item_list()[idx][col] for col in self.use_cols}
+            ori_result['src'] = self.src
+            return
         return {}
 
     def get_col_names(self):
-        return list(self.col_rename.values())
+        cols = list(self.col_rename.values())
+        cols.append('src')
+        return cols
 
 
 class JusoXy(JusoAddr):
@@ -70,11 +76,13 @@ class JusoXy(JusoAddr):
         # self.use_cols = ['entX', 'entY']
         self.use_cols = ['x', 'y']
         self.transformer = Transformer.from_crs(CRS.from_epsg(5179), CRS.from_epsg(4326), always_xy=True)
+        self.src = 'juso_xy'
 
     def call_api(self, param):
         if param:
             param.update(self.p)
             req = requests.get(self.api_url, params=param)
+            self.quota_count += 1
             self.current_result = req.json()
         else:
             self.current_result = None
@@ -85,11 +93,11 @@ class JusoXy(JusoAddr):
             ent_y = self.get_item_list()[idx]['entY']
             x, y = self.transformer.transform(ent_x, ent_y)
             # return {col: self.get_item_list()[col] for col in self.use_cols}
-            return {'x': x, 'y': y}
+            return {'x': x, 'y': y, 'src': self.src}
         return {}
 
     def get_col_names(self):
-        return ['x', 'y']
+        return ['x', 'y', 'src']
 
 
 if __name__ == '__main__':

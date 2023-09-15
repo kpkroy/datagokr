@@ -13,6 +13,15 @@ class ApiBlueprint:
         self.current_result = None
         self.error_list = []
         self.begin_time = datetime.datetime.now()
+        self.quota = None
+        self.quota_count = 0
+        self.src = ''
+
+    def get_quota(self) -> int:
+        return self.quota
+
+    def set_quota(self, quota: int):
+        self.quota = quota
 
     @abc.abstractmethod
     def call_api(self, addr):
@@ -44,26 +53,23 @@ class ApiBlueprint:
             for item in self.error_list:
                 file.write('%s\n' % item)
 
-    def read_file(self, addr_col_name, ifp, start_from, start_col) -> []:
-        df = pd.read_csv(ifp, encoding='utf-8-sig')
-        df.dropna(subset=[addr_col_name], inplace=True)
-        if start_from:
-            df = df[df[start_col] > start_from]
-        table = df.to_dict('records')
+    def add_api_col_to_csv(self, df: pd.DataFrame, addr_col_name: str, work_dir: str, out_name: str):
+        # returns undone
         field_names = list(df.columns)
         field_names.extend(self.get_col_names())
-        return table, field_names
 
-    def add_api_col_to_csv(self, addr_col_name: str, ifp: str, work_dir: str, out_name: str, start_from=None, start_col=None):
-        table, field_names = self.read_file(addr_col_name, ifp, start_from, start_col)
         ec = ExportChunker(export_path=work_dir, export_file_name=out_name, begin_time=self.begin_time)
         ec.set_field_name(field_names)
-        ec.set_chunk_size(1000)
+        ec.set_chunk_size(1)
+        table = df.to_dict('records')
+        empty_rec = {x: '' for x in self.get_col_names()}
+        empty_rec['src'] = self.src
 
         i = 0
         for row in table:
+            if self.quota_count >= self.quota:
+                break
             i += 1
-
             addr = row.get(addr_col_name)       # call api
             self.call_api(addr)
             if not self.has_result():
@@ -71,7 +77,10 @@ class ApiBlueprint:
                 self.call_api(cleansed)
 
             api_result = self.get_result()      # get result
+            if not api_result:
+                api_result = empty_rec
             row.update(api_result)
             ec.add_chunk([row])
         ec.export_csv_local()
         self.export_errors(work_dir, out_name)
+        return df[i:]
