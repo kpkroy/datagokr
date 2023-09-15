@@ -29,6 +29,9 @@ class ExportChunker:
         self.id_col_name = id_col_name
         self.setup_environment()
 
+    def set_chunk_size(self, chunk_size):
+        self.chunk_item_max = chunk_size
+
     def setup_environment(self):
         if not os.path.exists(self.export_path):
             os.mkdir(self.export_path)
