@@ -12,7 +12,7 @@ class KakaoApi(ApiBlueprint):
         self.use_cols = ['x', 'y']
         self.two_depth_cols = {'address': ['b_code', 'region_1depth_name', 'region_2depth_name', 'region_3depth_name'],
                                'road_address': ['address_name', 'building_name']}
-        self.col_rename = {'address_name': 'refined', 'type': 'road', 'b_code': 'region_code',
+        self.col_rename = {'address_name': 'refined', 'type': 'parcel', 'b_code': 'region_code',
                            'building_name': 'title', 'region_1depth_name': 'depth1', 'region_2depth_name': 'depth2',
                            'region_3depth_name': 'depth3', 'x': 'x', 'y': 'y', 'category': 'category', 'src': 'src'}
         self.src = 'kakao'
@@ -46,7 +46,7 @@ class KakaoApi(ApiBlueprint):
             else:
                 rec = {col: '' for col in self.use_cols}    # if not road
             for col in self.two_depth_cols:
-                if col in item:
+                if col in item and item.get(col) is not None:
                     for in_col in self.two_depth_cols.get(col):
                         rec[in_col] = item[col][in_col]
             return rec
@@ -55,6 +55,9 @@ class KakaoApi(ApiBlueprint):
     def call_api(self, addr):
         self.current_result = self.api.search_address(addr)
         self.quota_count += 1
+
+    def call_api_cleansed(self, addr):
+        pass
 
     def has_result(self, idx=None) -> bool:
         try:

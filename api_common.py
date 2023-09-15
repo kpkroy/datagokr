@@ -53,8 +53,15 @@ class ApiBlueprint:
             for item in self.error_list:
                 file.write('%s\n' % item)
 
+    def call_api_cleansed(self, addr):
+        cleansed = self.cleanse_addr(addr)
+        self.call_api(cleansed)
+        if not self.get_result():
+            print(f'new_addr : {cleansed} NOT FOUND!')
+
     def add_api_col_to_csv(self, df: pd.DataFrame, addr_col_name: str, work_dir: str, out_name: str):
         # returns undone
+        print(f'Starting Process for [{self.src}]')
         field_names = list(df.columns)
         field_names.extend(self.get_col_names())
 
@@ -73,8 +80,7 @@ class ApiBlueprint:
             addr = row.get(addr_col_name)       # call api
             self.call_api(addr)
             if not self.has_result():
-                cleansed = self.cleanse_addr(addr)
-                self.call_api(cleansed)
+                self.call_api_cleansed(addr)
 
             api_result = self.get_result()      # get result
             if not api_result:
