@@ -25,7 +25,9 @@ if __name__ == '__main__':
     df = read_file(input_fp, 'addr', )
     prev_result_fps = [os.path.join(wd, x) for x in ['0914_0057_result.csv',
                                                      '0915_2052_juso_result.csv', '0915_2105_juso_result.csv',
-                                                     '0915_2300_juso_result.csv']]
+                                                     '0915_2300_juso_result.csv', '0916_0003_juso_result.csv',
+                                                     '0916_0215_juso_result.csv', '0917_2031_juso_result',
+                                                     '0917_2236_juso_result']]
     df = get_undone(df, prev_result_fps, 'id')
 
     ka = KakaoApi()
@@ -37,8 +39,10 @@ if __name__ == '__main__':
     v.set_quota(39950)
     num = datetime.datetime.now().strftime('%m%d_%H%M')
     df = v.add_api_col_to_csv(df, 'addr', wd, f'{num}_juso_result.csv')
+    v = VworldXy()
     v.use_key(1)
     df = v.add_api_col_to_csv(df, 'addr', wd, f'{num}_juso_result.csv')
+    v = VworldXy()
     v.use_key(2)
     df = v.add_api_col_to_csv(df, 'addr', wd, f'{num}_juso_result.csv')
 
