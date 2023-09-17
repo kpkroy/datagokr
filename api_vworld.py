@@ -100,18 +100,9 @@ class VworldXy(ApiBlueprint):
                     self.col_d3: self.get_depth3(),
                     self.col_x: self.get_x(),
                     self.col_y: self.get_y(),
+                    'src': self.src
                     }
-        else:
-            print(f"[error] : {self.p['address']}")
-            self.error_list.append(self.p['address'])
-            return {self.col_x: '',
-                    self.col_y: '',
-                    self.col_d1: '',
-                    self.col_d2: '',
-                    self.col_d3: '',
-                    self.col_refined: '',
-                    self.col_type: '',
-                    'src': self.src}
+        return {}
 
     def get_col_names(self):
         return [self.col_refined, self.col_type, self.col_d1, self.col_d2, self.col_d3, self.col_x, self.col_y, 'src']
@@ -165,19 +156,14 @@ class VworldFran(ApiBlueprint):
         col_list.append('src')
         return col_list
 
-    def is_ok(self) -> bool:
+    def has_result(self):
         try:
             if self.current_result['response']['status'] == 'OK':
-                return True
+                if len(self.current_result['response']['result']['items']) > 0:
+                    return True
             return False
         except Exception as e:
             return False
-
-    def has_result(self):
-        if self.is_ok():
-            if len(self.current_result['response']['result']['items']) > 0:
-                return True
-        return False
 
     def create_rec(self, response):
         rec = {'src': self.src}
@@ -189,7 +175,10 @@ class VworldFran(ApiBlueprint):
                 rec[col] = response[col]
         return rec
 
-    def get_results(self):
+    def get_result(self, idx=0) -> dict:
+        pass
+
+    def get_all_results(self):
         if self.has_result():
             result_list = []
             response_list = self.current_result['response']['result']['items']

@@ -85,7 +85,6 @@ class ApiBlueprint:
             api_result = self.get_result()      # get result
             if not api_result:
                 api_result = empty_rec
-                print(f'NOT FOUND : {addr}')
             row.update(api_result)
             ec.add_chunk([row])
         ec.export_csv_local()
