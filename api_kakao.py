@@ -5,10 +5,11 @@ from PyKakao import Local
 class KakaoApi(ApiBlueprint):
     def __init__(self):
         super().__init__()
+        self.keys = ['564cc09454b9458b0c8c2e1e558e70d5', '93812f2cb47c11a5c533333793ed520d']
         self.quota = 100000
         self.token = '564cc09454b9458b0c8c2e1e558e70d5'
         self.api_url = 'https://dapi.kakao.com/v2/local/search/address.'
-        self.api = Local(service_key=self.token)
+        self.api = Local(service_key=self.keys[0])
         self.use_cols = ['x', 'y']
         self.two_depth_cols = {'address': ['address_name', 'b_code', 'region_1depth_name', 'region_2depth_name',
                                            'region_3depth_name'],
@@ -22,6 +23,9 @@ class KakaoApi(ApiBlueprint):
                            'address_region_3depth_name': 'depth3',
                            'x': 'x', 'y': 'y', 'category': 'category', 'src': 'src'}
         self.src = 'kakao'
+
+    def use_key(self, key_val):
+        self.api = Local(service_key=self.keys[key_val])
 
     def get_col_names(self):
         return list(self.col_rename.values())
