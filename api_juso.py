@@ -1,6 +1,7 @@
 from pyproj import Transformer, CRS
 import requests
 from api_common import ApiBlueprint
+import time
 
 
 class JusoAddr(ApiBlueprint):
@@ -20,9 +21,22 @@ class JusoAddr(ApiBlueprint):
 
     def call_api(self, juso: str):
         self.p['keyword'] = juso
-        req = requests.get(self.api_url, params=self.p)
-        self.quota_count += 1
-        self.current_result = req.json()
+        retry_count = 0
+        while retry_count < 3:
+            retry_count += 1
+            time_wait = 3
+            try:
+                req = requests.get(self.api_url, params=self.p)
+                self.current_result = req.json()
+                break
+            except Exception as e:
+                print(e)
+                time.sleep(time_wait)
+                print(f'Waiting...{time_wait}')
+                time_wait += 3
+
+    def call_api_cleansed(self, addr):
+        pass
 
     def has_result(self, idx=0):
         try:
@@ -82,7 +96,6 @@ class JusoXy(JusoAddr):
         if param:
             param.update(self.p)
             req = requests.get(self.api_url, params=param)
-            self.quota_count += 1
             self.current_result = req.json()
         else:
             self.current_result = None
