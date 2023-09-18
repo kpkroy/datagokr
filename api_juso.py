@@ -29,7 +29,7 @@ class JusoAddr(ApiBlueprint):
             if self.current_result['results']['common']['errorCode'] == '0':
                 if idx == 0:
                     return True
-                elif idx <= int(self.current_result['results']['common']['totalCount']):
+                elif idx < int(self.current_result['results']['common']['totalCount']):
                     return True
             return False
         except Exception as e:
