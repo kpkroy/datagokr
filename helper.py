@@ -9,8 +9,11 @@ def split_and_export(df: pd.DataFrame, file_name, file_counts=4):
     return
 
 
-def read_file_and_drop_na(ifp, drop_subset: list) -> pd.DataFrame:
-    main_df = pd.read_csv(ifp, encoding='utf-8-sig', delimiter='|')
+def read_file_and_drop_na(ifp, drop_subset: list, delim='') -> pd.DataFrame:
+    if delim:
+        main_df = pd.read_csv(ifp, encoding='utf-8-sig', delimiter=delim)
+    else:
+        main_df = pd.read_csv(ifp, encoding='utf-8-sig')
     main_df.dropna(subset=drop_subset, inplace=True)        # drop rows where drop_subset column is null
     return main_df
 
