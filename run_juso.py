@@ -6,9 +6,9 @@ import datetime
 
 
 def read_file(ifp, input_addr_col) -> pd.DataFrame:
-    df = pd.read_csv(ifp, encoding='utf-8-sig', delimiter='|')
-    df.dropna(subset=[input_addr_col], inplace=True)
-    return df
+    main_df = pd.read_csv(ifp, encoding='utf-8-sig', delimiter='|')
+    main_df.dropna(subset=[input_addr_col], inplace=True)
+    return main_df
 
 
 def get_undone(idf: pd.DataFrame, fps: list, key_col: str):

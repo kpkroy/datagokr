@@ -76,7 +76,6 @@ class JusoXy(JusoAddr):
         super().__init__()
         self.api_url = 'https://business.juso.go.kr/addrlink/addrCoordApi.do?'
         self.p = {'confmKey': 'U01TX0FVVEgyMDIzMDkwNjE2MjI1MDExNDA4MTU=', 'resultType': 'json'}
-        # self.use_cols = ['entX', 'entY']
         self.use_cols = ['x', 'y']
         self.transformer = Transformer.from_crs(CRS.from_epsg(5179), CRS.from_epsg(4326), always_xy=True)
         self.src = 'juso_xy'
@@ -109,11 +108,9 @@ if __name__ == '__main__':
     print(f'ori result : {j_addr.get_ori_result()}')
     print(f'renamed    : {j_addr.get_result()}')
     print(f'col name   : {j_addr.get_col_names()}')
-
     print()
-    '''
+
     j_xy = JusoXy()
     j_xy.call_api(j_addr.get_param_for_xy())
     print(j_xy.get_result())
     print('---- Note: This is transformed using pyproj. Not very accurate----')
-    '''
