@@ -74,7 +74,7 @@ class ApiBlueprint:
 
         i = 0
         for row in table:
-            if self.quota_count >= self.quota:
+            if self.quota and self.quota_count >= self.quota:
                 break
             i += 1
             addr = row.get(addr_col_name)       # call api
