@@ -28,7 +28,6 @@ class VworldXy(ApiBlueprint):
         self.col_d3 = 'depth3'
         self.col_x = 'x'
         self.col_y = 'y'
-        self.col_refined = 'refined'
         self.col_type = 'type'
         self.error_list = []
         self.src = 'vworld_xy'
@@ -93,19 +92,23 @@ class VworldXy(ApiBlueprint):
 
     def get_result(self, idx=0):
         if self.has_result():
-            return {self.col_refined: self.get_refined(),
-                    self.col_type: self.get_type(),
+            return {self.get_type(): self.get_refined(),
+                    self.alt_type.get(self.get_type()): '',
                     self.col_d1: self.get_depth1(),
                     self.col_d2: self.get_depth2(),
                     self.col_d3: self.get_depth3(),
                     self.col_x: self.get_x(),
                     self.col_y: self.get_y(),
-                    'src': self.src
+                    'src': self.src,
+                    'title': '',
+                    'region_code': '',
+                    'category': ''
                     }
         return {}
 
     def get_col_names(self):
-        return [self.col_refined, self.col_type, self.col_d1, self.col_d2, self.col_d3, self.col_x, self.col_y, 'src']
+        return [self.col_d1, self.col_d2, self.col_d3, self.col_x, self.col_y, 'src', 'title', 'region_code'
+                'road', 'parcel', 'category']
 
     def export_errors(self, work_dir, out_name):
         fp = os.path.join(work_dir, 'error_' + out_name)

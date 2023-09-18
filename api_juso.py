@@ -14,7 +14,8 @@ class JusoAddr(ApiBlueprint):
         self.error_list = []
         self.param_xy = ['admCd', 'rnMgtSn', 'udrtYn', 'buldMnnm', 'buldSlno']
         self.col_rename = {'admCd': 'region_code', 'siNm': 'depth1', 'sggNm': 'depth2', 'emdNm': 'depth3',
-                           'bdNm': 'title', 'jibunAddr': 'parcel', 'addr': 'road', 'detBdNmList': 'category'}
+                           'bdNm': 'title', 'jibunAddr': 'parcel', 'roadAddr': 'road', 'detBdNmList': 'category',
+                           'x': 'x', 'y': 'y', 'src': 'src'}
         self.src = 'juso'
 
     def call_api(self, juso: str):
@@ -52,19 +53,21 @@ class JusoAddr(ApiBlueprint):
     def get_result(self, idx=0):
         ori_result = self.get_ori_result(idx)
         if ori_result:
-            return {self.col_rename.get(x): y for x, y in ori_result.items()}
+            renamed = {self.col_rename.get(x): y for x, y in ori_result.items()}
+            renamed['src'] = self.src
+            renamed['x'] = ''
+            renamed['y'] = ''
+            return renamed
         return{}
 
     def get_ori_result(self, idx=0):
         if self.has_result(idx):
             ori_result = {col: self.get_item_list()[idx][col] for col in self.use_cols}
-            ori_result['src'] = self.src
-            return
+            return ori_result
         return {}
 
     def get_col_names(self):
         cols = list(self.col_rename.values())
-        cols.append('src')
         return cols
 
 
@@ -103,11 +106,14 @@ class JusoXy(JusoAddr):
 if __name__ == '__main__':
     j_addr = JusoAddr()
     j_addr.call_api('인천광역시 연수구 청학동 567-4')
-    print(f'ori result : {j_addr.get_result()}')
+    print(f'ori result : {j_addr.get_ori_result()}')
     print(f'renamed    : {j_addr.get_result()}')
+    print(f'col name   : {j_addr.get_col_names()}')
 
     print()
+    '''
     j_xy = JusoXy()
     j_xy.call_api(j_addr.get_param_for_xy())
     print(j_xy.get_result())
     print('---- Note: This is transformed using pyproj. Not very accurate----')
+    '''

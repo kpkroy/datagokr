@@ -10,11 +10,17 @@ class KakaoApi(ApiBlueprint):
         self.api_url = 'https://dapi.kakao.com/v2/local/search/address.'
         self.api = Local(service_key=self.token)
         self.use_cols = ['x', 'y']
-        self.two_depth_cols = {'address': ['b_code', 'region_1depth_name', 'region_2depth_name', 'region_3depth_name'],
+        self.two_depth_cols = {'address': ['address_name', 'b_code', 'region_1depth_name', 'region_2depth_name',
+                                           'region_3depth_name'],
                                'road_address': ['address_name', 'building_name']}
-        self.col_rename = {'address_name': 'refined', 'type': 'parcel', 'b_code': 'region_code',
-                           'building_name': 'title', 'region_1depth_name': 'depth1', 'region_2depth_name': 'depth2',
-                           'region_3depth_name': 'depth3', 'x': 'x', 'y': 'y', 'category': 'category', 'src': 'src'}
+        self.col_rename = {'road_address_address_name': 'road',
+                           'road_address_building_name': 'title',
+                           'address_address_name': 'parcel',
+                           'address_b_code': 'region_code',
+                           'address_region_1depth_name': 'depth1',
+                           'address_region_2depth_name': 'depth2',
+                           'address_region_3depth_name': 'depth3',
+                           'x': 'x', 'y': 'y', 'category': 'category', 'src': 'src'}
         self.src = 'kakao'
 
     def get_col_names(self):
@@ -35,20 +41,22 @@ class KakaoApi(ApiBlueprint):
         if ori_result:
             ori_result = {self.col_rename.get(x): y for x, y in ori_result.items()}
             ori_result['src'] = self.src
+            ori_result['category'] = ''
             return ori_result
         return {}
 
     def get_ori_result(self, idx=0):
         if self.has_result(idx):
             item = self.get_item_list()[idx]
-            if item.get('address_type') != 'REGION':
-                rec = {col: item[col] for col in self.use_cols}
+            if item.get('address_type') == 'REGION':
+                rec = {col: '' for col in self.use_cols}  # if no address
             else:
-                rec = {col: '' for col in self.use_cols}    # if not road
+                rec = {col: item[col] for col in self.use_cols}
+
             for col in self.two_depth_cols:
                 if col in item and item.get(col) is not None:
                     for in_col in self.two_depth_cols.get(col):
-                        rec[in_col] = item[col][in_col]
+                        rec[col + '_' + in_col] = item[col][in_col]
             return rec
         return {}
 
