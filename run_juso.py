@@ -5,9 +5,9 @@ import os
 import datetime
 
 
-def read_file(ifp, input_addr_col) -> pd.DataFrame:
+def read_file(ifp, drop_subset: list) -> pd.DataFrame:
     main_df = pd.read_csv(ifp, encoding='utf-8-sig', delimiter='|')
-    main_df.dropna(subset=[input_addr_col], inplace=True)
+    main_df.dropna(subset=drop_subset, inplace=True)        # drop rows where drop_subset column is null
     return main_df
 
 
@@ -22,7 +22,7 @@ if __name__ == '__main__':
 
     wd = 'data'
     input_fp = os.path.join(wd, 'brno_companies.txt')
-    df = read_file(input_fp, 'addr', )
+    df = read_file(input_fp, ['addr'])
     prev_result_fps = [os.path.join(wd, x) for x in ['0914_0057_result.csv',
                                                      '0915_2052_juso_result.csv', '0915_2105_juso_result.csv',
                                                      '0915_2300_juso_result.csv', '0916_0003_juso_result.csv',
