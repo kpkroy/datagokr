@@ -7,6 +7,7 @@ import time
 class JusoAddr(ApiBlueprint):
     def __init__(self):
         super().__init__()
+        self.temp_key = ['devU01TX0FVVEgyMDIzMDkxODE2NTc1OTExNDExMjM=']
         self.token = 'U01TX0FVVEgyMDIzMDkwNzExMjAxMDExNDA4MzY='
         self.api_url = 'https://www.juso.go.kr/addrlink/addrLinkApi.do?'
         self.p = {'confmKey': self.token, 'resultType': 'json', 'countPerPage': 10}
@@ -67,8 +68,6 @@ class JusoAddr(ApiBlueprint):
         if ori_result:
             renamed = {self.col_rename.get(x): y for x, y in ori_result.items()}
             renamed['src'] = self.src
-            renamed['x'] = ''
-            renamed['y'] = ''
             return renamed
         return{}
 
