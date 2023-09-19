@@ -1,4 +1,3 @@
-from pyproj import Transformer, CRS
 import requests
 from api_common import ApiBlueprint
 import time
@@ -81,7 +80,8 @@ class JusoAddr(ApiBlueprint):
         cols = list(self.col_rename.values())
         return cols
 
-
+'''
+from pyproj import Transformer, CRS
 class JusoXy(JusoAddr):
     def __init__(self):
         super().__init__()
@@ -110,7 +110,7 @@ class JusoXy(JusoAddr):
 
     def get_col_names(self):
         return ['x', 'y', 'src']
-
+'''
 
 if __name__ == '__main__':
     j_addr = JusoAddr()
