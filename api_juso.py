@@ -120,7 +120,9 @@ if __name__ == '__main__':
     print(f'col name   : {j_addr.get_col_names()}')
     print()
 
+    '''
     j_xy = JusoXy()
     j_xy.call_api(j_addr.get_param_for_xy())
     print(j_xy.get_result())
     print('---- Note: This is transformed using pyproj. Not very accurate----')
+    '''
