@@ -5,9 +5,9 @@ from PyKakao import Local
 class KakaoApi(ApiBlueprint):
     def __init__(self):
         super().__init__()
-        self.keys = ['564cc09454b9458b0c8c2e1e558e70d5', '93812f2cb47c11a5c533333793ed520d']
+        self.keys = ['564cc09454b9458b0c8c2e1e558e70d5', '93812f2cb47c11a5c533333793ed520d',
+                     'fa56b27cefe5fa378b3efcdec50d7156']
         self.quota = 100000
-        self.token = '564cc09454b9458b0c8c2e1e558e70d5'
         self.api_url = 'https://dapi.kakao.com/v2/local/search/address.'
         self.api = Local(service_key=self.keys[0])
         self.use_cols = ['x', 'y']
