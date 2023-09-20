@@ -16,7 +16,9 @@ class DataGo:
         self.src = 'datago'
         self.token = 'RPhzV1mq7cMIwWp4intcHUvyvIQKhxPCCIbtbna1FfD23yFJFnbktcEVbX/auQgrruR2bWz0bhom1lGPjJdg6Q=='
         self.api_url = ''
-        self.p = {'serviceKey': self.token, 'numOfRows': 10000, 'resultType': 'json'}
+        self.page_name = 'pageNo'
+        self.page_per_name = 'numOfRows'
+        self.p = {'serviceKey': self.token, self.page_per_name: 10000, 'resultType': 'json'}
 
     def get_elapsed(self):
         pass
@@ -26,20 +28,20 @@ class DataGo:
         df = pd.DataFrame()
         while True:
             page_num += 1
-            self.p['pageNo'] = page_num
+            self.p[self.page_name] = page_num
             new_df = self.get_response()
             df = pd.concat([df, new_df])
             print(f'....[{self.src}] - {page_num}: {len(new_df)} rows downloaded')
-            if len(new_df) < self.p['numOfRows']:
+            if len(new_df) < self.p[self.page_per_name]:
                 break
         self.export_to_work_dir(df)
 
     def get_update(self, prev_num, now_num=None):
         if now_num is None:
             now_num = self.date_num
-        fp_now = os.path.join(self.work_dir, self.get_file_name(now_num))
-        fp_prev = os.path.join(self.work_dir, self.get_file_name(prev_num))
-        fp_updated = os.path.join(self.work_dir, self.get_file_name(self.date_num, '_update'))
+        fp_now = self.get_fpath(now_num)
+        fp_prev = self.get_fpath(prev_num)
+        fp_updated = self.get_fpath(self.date_num, '_update')
         use_cols = ['addr', 'saeopjangNm', 'saeopjaDrno']
         d_types = {'addr': 'string', 'saeopjangNm': 'string', 'saeopjangDrno': float}
 
@@ -65,17 +67,20 @@ class DataGo:
         elif self.p['resultType'] == 'xml':
             return pd.read_xml(req.content, xpath='.//items//item')
 
-    def get_file_name(self, date_num, post_fix=''):
-        return f'{date_num}_{self.src}_{post_fix}.csv'
+    def get_fpath(self, date_num=None, post_fix=''):
+        if date_num is None:
+            date_num = self.date_num
+        fn = f'{date_num}_{self.src}{post_fix}.csv'
+        fp = os.path.join(self.work_dir, fn)
+        return fp
 
     def export_to_work_dir(self, df: pd.DataFrame):
-        file_name = self.get_file_name(self.date_num)
-        fp = os.path.join(self.work_dir, file_name)
+        fp = self.get_fpath()
         if os.path.isfile(fp):
             df.to_csv(fp, encoding='utf-8-sig', index=False, mode='a', header=False)
         else:
             df.to_csv(fp, encoding='utf-8-sig', index=False)
-        print(f'....[{self.src}] - {file_name}: {len(df)} rows exported')
+        print(f'....[{self.src}] - {fp}: {len(df)} rows exported')
 
 
 class CardFranchise(DataGo):
@@ -84,8 +89,11 @@ class CardFranchise(DataGo):
     # 코나아이: I0000001    # 한국간편결제진흥원: I0000002    # 신한카드: I0000003    # 한국조폐공사: I0000004    # KT: I0000005    # 농협은행: I0000006    # 광주은행: I0000007    # 대구은행: I0000008    # ITS&G: I0000009    # NICE 정보통신: I0000010    # KIS 정보통신: I0000011    # 인조이웍스: I0000012    # KIS 정보통신(2): I0000014
     def __init__(self, date_num='', work_dir='data'):
         super().__init__(date_num, work_dir)
+        self.page_name = 'pageNo'
+        self.page_per_name = 'numOfRows'
+        self.p = {'serviceKey': self.token, self.page_per_name: 10000}
         self.src = 'card_fran'
-        self.api_url = 'https://apis.data.go.kr/B190001/cardFranchisesV2/cardV2'
+        self.api_url = 'https://apis.data.go.kr/B190001/localFranchises/franchise'
 
 
 class FranHQ(DataGo):
@@ -111,7 +119,7 @@ class FranHQHistory(DataGo):
         self.api_url = 'http://apis.data.go.kr/1130000/FftcjnghdqrtrsInfoChghstService/getJnghdqrtrsInfoChghst'
 
 
-class FranMas(DataGo):
+class FranBrand(DataGo):
     # 목적 : franchise 및 브랜드 추가용
     # 공정거래위원회_가맹정보_브랜드 목록 제공 서비
     # 브랜드 목록 조회
@@ -131,7 +139,7 @@ class FranBranch(DataGo):
     def __init__(self, date_num='', work_dir='data'):
         super().__init__(date_num, work_dir)
         self.src = 'ftc_branch'
-        self.api_url = 'http://apis.data.go.kr/1130000/FftcBrandFrcsDropInfoService/getBrandFrcsDropInfo'
+        self.api_url = 'https://apis.data.go.kr/1130000/FftcBrandFrcsStatsService/getBrandFrcsStats'
 
 
 class BrandComp(DataGo):
@@ -161,7 +169,7 @@ class DataGoApi:
             date_n = datetime.datetime.now().strftime('%m%d_%H%M')
         self.date_n = date_n
         self.b = Bohum(self.date_n, work_dir)
-        self.brand = FranMas(self.date_n, work_dir)
+        self.brand = FranBrand(self.date_n, work_dir)
         self.hq_addr = FranHQ(self.date_n, work_dir)
         self.branch = FranBranch(self.date_n, work_dir)
         self.card = CardFranchise(self.date_n, work_dir)
@@ -176,34 +184,38 @@ class DataGoApi:
         print(f'Setting year to {year}')
         self.brand.p['yr'] = year
         self.hq_addr.p['yr'] = year
-        self.branch.p['yr'] = year
 
-    def download(self, work_dir='data', year=2023):
+    def download(self, work_dir='data'):
         self.mk_dir(work_dir)
-        self.download_company_info()
-        self.download_fran_info(year)
-
-    def download_company_info(self):
         self.b.download()
         self.card.download()
+        self.download_fran_info()
 
-    def download_fran_info(self, year=2023):
-        self.set_year(year)
-        self.brand.download()
-        self.hq_addr.download()
-        self.branch.download()
+    def download_fran_branch_count(self):
+        for y in range(2017, 2024):
+            self.branch.p['yr'] = y
+            self.branch.download()
+        h.rm_duplicates_from_file(self.branch.get_fpath(), sort_by=['yr'], drop_duplicates_by=['jngIfrmpRgsno'])
+
+    def download_fran_info(self, start_year=2017, end_year=2024):
+        for y in range(2017, 2024):
+            self.set_year(y)
+            self.brand.download()
+            self.hq_addr.download()  # Need only the last
+        h.rm_duplicates_from_file(self.hq_addr.get_fpath(), sort_by=['yr'], drop_duplicates_by=['brno'])
+        h.rm_duplicates_from_file(self.brand.get_fpath(), sort_by=['yr'], drop_duplicates_by=['brno', 'brandNm'])
 
     def get_updated(self, prev_num, now_num=None):
         self.b.get_update(prev_num, now_num)
         self.brand.get_update(prev_num, now_num)
         self.hq_addr.get_update(prev_num, now_num)
-        self.branch.get_update(prev_num, now_num)
 
 
 if __name__ == '__main__':
     d_num = datetime.datetime.now().strftime('%m%d_%H%M')
     c = DataGoApi(d_num)
-    for yr in range(2017, 2024):
-        c.download_fran_info(yr)
+    c.card.download()
+    print('a')
+    # c.download_fran_info()
     # c.download()
     #c.get_updated('0628_1954', d_num)

@@ -8,7 +8,7 @@ if __name__ == '__main__':
     c = Cia(d_num)
     c.download()
     c.get_updated('0628_1954', d_num)
-    updated_file_name = c.b.get_file_name(d_num, '_update')
+    updated_file_name = c.b.get_fpath(d_num, '_update')
 
 
 

@@ -64,5 +64,12 @@ def get_update_without_id(fp_prev, fp_now, use_cols, d_types):
     # Find rows in B that are not in A
     return df_now.merge(df_prev, how='left', indicator=True).loc[lambda x: x['_merge'] == 'left_only'].drop('_merge', axis=1)
 
+
 def get_update_with_id(fp_prev, fp_now, id_col_name):
     pass
+
+
+def rm_duplicates_from_file(fp, sort_by, drop_duplicates_by):
+    df = pd.read_csv(fp, encoding='utf-8-sig')
+    df = df.sort_values(by=sort_by, na_position='last').drop_duplicates(subset=drop_duplicates_by, keep='first')
+    df.to_csv(fp, encoding='utf-8-sig', index=False)
