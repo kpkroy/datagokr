@@ -195,7 +195,13 @@ class VworldFran(ApiBlueprint):
 
 
 if __name__ == '__main__':
+    '''
     b = VworldXy()
     k = '경상남도 창녕군 대합면 등지리 888'
     b.call_api(k, j_type='parcel')
+    print(b.get_result())
+    '''
+    b = VworldFran()
+    k = '원익엘앤디'
+    b.call_api(k)
     print(b.get_result())

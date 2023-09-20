@@ -1,5 +1,4 @@
 from api_datago import DataGoApi as Cia
-from api_vworld import AddrApiHandler
 import datetime
 
 
@@ -11,8 +10,6 @@ if __name__ == '__main__':
     c.get_updated('0628_1954', d_num)
     updated_file_name = c.b.get_file_name(d_num, '_update')
 
-    js = AddrApiHandler()
-    js.add_to_csv()
 
 
 

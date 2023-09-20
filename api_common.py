@@ -1,4 +1,4 @@
-import datetime
+import helper as h
 from export_chunker import ExportChunker
 import pandas as pd
 import abc
@@ -8,14 +8,15 @@ import os
 
 class ApiBlueprint:
     def __init__(self):
+        self.begin_time = h.get_now_time()
+        self.src = ''
         self.api_url = ''
         self.p = dict()
-        self.current_result = None
-        self.error_list = []
-        self.begin_time = datetime.datetime.now()
         self.quota = None
         self.quota_count = 0
-        self.src = ''
+
+        self.current_result = None
+        self.error_list = []
 
     def get_quota(self) -> int:
         return self.quota

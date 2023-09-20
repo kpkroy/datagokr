@@ -6,7 +6,7 @@ import time
 class JusoAddr(ApiBlueprint):
     def __init__(self):
         super().__init__()
-        self.temp_key = ['devU01TX0FVVEgyMDIzMDkxODE2NTc1OTExNDExMjM=']
+        self.src = 'juso'
         self.token = 'U01TX0FVVEgyMDIzMDkwNzExMjAxMDExNDA4MzY='
         self.api_url = 'https://www.juso.go.kr/addrlink/addrLinkApi.do?'
         self.p = {'confmKey': self.token, 'resultType': 'json', 'countPerPage': 10}
@@ -17,7 +17,6 @@ class JusoAddr(ApiBlueprint):
         self.col_rename = {'admCd': 'region_code', 'siNm': 'depth1', 'sggNm': 'depth2', 'emdNm': 'depth3',
                            'bdNm': 'title', 'jibunAddr': 'parcel', 'roadAddr': 'road', 'detBdNmList': 'category',
                            'x': 'x', 'y': 'y', 'src': 'src'}
-        self.src = 'juso'
 
     def call_api(self, juso: str):
         self.p['keyword'] = juso
@@ -80,37 +79,6 @@ class JusoAddr(ApiBlueprint):
         cols = list(self.col_rename.values())
         return cols
 
-'''
-from pyproj import Transformer, CRS
-class JusoXy(JusoAddr):
-    def __init__(self):
-        super().__init__()
-        self.api_url = 'https://business.juso.go.kr/addrlink/addrCoordApi.do?'
-        self.p = {'confmKey': 'U01TX0FVVEgyMDIzMDkwNjE2MjI1MDExNDA4MTU=', 'resultType': 'json'}
-        self.use_cols = ['x', 'y']
-        self.transformer = Transformer.from_crs(CRS.from_epsg(5179), CRS.from_epsg(4326), always_xy=True)
-        self.src = 'juso_xy'
-
-    def call_api(self, param):
-        if param:
-            param.update(self.p)
-            req = requests.get(self.api_url, params=param)
-            self.current_result = req.json()
-        else:
-            self.current_result = None
-
-    def get_result(self, idx=0):
-        if self.has_result():
-            ent_x = self.get_item_list()[idx]['entX']
-            ent_y = self.get_item_list()[idx]['entY']
-            x, y = self.transformer.transform(ent_x, ent_y)
-            # return {col: self.get_item_list()[col] for col in self.use_cols}
-            return {'x': x, 'y': y, 'src': self.src}
-        return {}
-
-    def get_col_names(self):
-        return ['x', 'y', 'src']
-'''
 
 if __name__ == '__main__':
     j_addr = JusoAddr()
@@ -125,4 +93,35 @@ if __name__ == '__main__':
     j_xy.call_api(j_addr.get_param_for_xy())
     print(j_xy.get_result())
     print('---- Note: This is transformed using pyproj. Not very accurate----')
+    '''
+    '''
+    from pyproj import Transformer, CRS
+    class JusoXy(JusoAddr):
+        def __init__(self):
+            super().__init__()
+            self.api_url = 'https://business.juso.go.kr/addrlink/addrCoordApi.do?'
+            self.p = {'confmKey': 'U01TX0FVVEgyMDIzMDkwNjE2MjI1MDExNDA4MTU=', 'resultType': 'json'}
+            self.use_cols = ['x', 'y']
+            self.transformer = Transformer.from_crs(CRS.from_epsg(5179), CRS.from_epsg(4326), always_xy=True)
+            self.src = 'juso_xy'
+
+        def call_api(self, param):
+            if param:
+                param.update(self.p)
+                req = requests.get(self.api_url, params=param)
+                self.current_result = req.json()
+            else:
+                self.current_result = None
+
+        def get_result(self, idx=0):
+            if self.has_result():
+                ent_x = self.get_item_list()[idx]['entX']
+                ent_y = self.get_item_list()[idx]['entY']
+                x, y = self.transformer.transform(ent_x, ent_y)
+                # return {col: self.get_item_list()[col] for col in self.use_cols}
+                return {'x': x, 'y': y, 'src': self.src}
+            return {}
+
+        def get_col_names(self):
+            return ['x', 'y', 'src']
     '''
