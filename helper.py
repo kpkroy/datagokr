@@ -1,5 +1,6 @@
 import pandas as pd
 import numpy as np
+import os
 
 
 def split_and_export(df: pd.DataFrame, file_name, file_counts=4):
@@ -25,5 +26,16 @@ def get_undone(idf: pd.DataFrame, fps: list, key_col: str):
     return undone
 
 
+def get_file_path_list_with_suffix(dir_path: str, suffix: str):
+    file_names = [os.path.join(dir_path, f) for f in os.listdir(dir_path) if f.endswith(suffix)]
+    return file_names
 
+
+def consolidate_and_export(rfp: list, out_fp):
+    dfs = [pd.read_csv(x, encoding='utf-8-sig') for x in rfp]
+    df = pd.concat(dfs)
+    df['refined'].fillna(df['road'], inplace=True)
+    df['refined'].fillna(df['parcel'], inplace=True)
+    df = df.sort_values(by=['refined', 'region_code'], na_position='last').drop_duplicates(subset='id', keep='first')
+    df.to_csv(out_fp, encoding='utf-8-sig')
 

@@ -16,9 +16,12 @@ if __name__ == '__main__':
                                                      '0916_0003_juso_result.csv', '0916_0215_juso_result.csv',
                                                      '0917_2031_juso_result.csv', '0917_2236_juso_result.csv',
                                                      '0918_1015_juso_result.csv', '0918_1211_juso_result.csv',
-                                                     '0918_0806_juso_result.csv']]
+                                                     '0918_0806_juso_result.csv', '0919_1000_juso_result.csv']]
     df = h.get_undone(df, prev_result_fps, 'id')
     num = datetime.datetime.now().strftime('%m%d_%H%M')
+    print(f'running run_juso.py')
+    print(f'...opening : {input_fp}')
+    print(f'...prev files : {prev_result_fps}')
 
     ka = KakaoApi()
     ka.set_quota(99900)
