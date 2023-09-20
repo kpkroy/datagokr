@@ -89,9 +89,9 @@ class CardFranchise(DataGo):
     # 코나아이: I0000001    # 한국간편결제진흥원: I0000002    # 신한카드: I0000003    # 한국조폐공사: I0000004    # KT: I0000005    # 농협은행: I0000006    # 광주은행: I0000007    # 대구은행: I0000008    # ITS&G: I0000009    # NICE 정보통신: I0000010    # KIS 정보통신: I0000011    # 인조이웍스: I0000012    # KIS 정보통신(2): I0000014
     def __init__(self, date_num='', work_dir='data'):
         super().__init__(date_num, work_dir)
-        self.page_name = 'pageNo'
-        self.page_per_name = 'numOfRows'
-        self.p = {'serviceKey': self.token, self.page_per_name: 10000}
+        self.page_name = 'page'
+        self.page_per_name = 'perPage'
+        self.p = {'serviceKey': self.token, self.page_per_name: 100}
         self.src = 'card_fran'
         self.api_url = 'https://apis.data.go.kr/B190001/localFranchises/franchise'
 
