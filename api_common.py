@@ -1,4 +1,5 @@
 import helper as h
+import datetime
 from export_chunker import ExportChunker
 import pandas as pd
 import abc
@@ -8,7 +9,7 @@ import os
 
 class ApiBlueprint:
     def __init__(self):
-        self.begin_time = h.get_now_time()
+        self.begin_time = datetime.datetime.now()
         self.src = ''
         self.api_url = ''
         self.p = dict()
