@@ -82,7 +82,7 @@ class JusoAddr(ApiBlueprint):
 
 if __name__ == '__main__':
     j_addr = JusoAddr()
-    j_addr.call_api('인천광역시 연수구 청학동 567-4')
+    j_addr.call_api('충청북도 제천시 의림대로 181')
     print(f'ori result : {j_addr.get_ori_result()}')
     print(f'renamed    : {j_addr.get_result()}')
     print(f'col name   : {j_addr.get_col_names()}')

@@ -6,6 +6,8 @@ import requests
 import lxml
 import argparse
 import helper as h
+from urllib3.util.retry import Retry
+from requests.adapters import HTTPAdapter
 
 
 class DataGo:
@@ -24,6 +26,26 @@ class DataGo:
         pass
 
     def download(self, start_page_num=0):
+        page_num = start_page_num
+        df = pd.DataFrame()
+        session = requests.Session()
+        retry = Retry(connect=3, backoff_factor=0.5)
+        adapter = HTTPAdapter(max_retries=retry)
+        session.mount('http://', adapter)
+        session.mount('https://', adapter)
+
+        while True:
+            page_num += 1
+            self.p[self.page_name] = page_num
+            req = session.get(self.api_url, params=self.p)
+            new_df = self.to_dataframe(req)
+            df = pd.concat([df, new_df])
+            print(f'....[{self.src}] - {page_num}: {len(new_df)} rows downloaded')
+            if len(new_df) < self.p[self.page_per_name]:
+                break
+        self.export_to_work_dir(df)
+
+    def download_(self, start_page_num=0):
         page_num = start_page_num
         df = pd.DataFrame()
         while True:
@@ -95,6 +117,22 @@ class CardFranchise(DataGo):
         self.src = 'card_fran'
         self.api_url = 'https://apis.data.go.kr/B190001/localFranchises/franchise'
 
+    def download_json(self, start_page_num=0):
+        per_page = 5000
+        b_url = f'https://apis.data.go.kr/B190001/localFranchises/franchise?serviceKey=RPhzV1mq7cMIwWp4intcHUvyvIQKhxPCCIbtbna1FfD23yFJFnbktcEVbX%2FauQgrruR2bWz0bhom1lGPjJdg6Q%3D%3D&perPage={per_page}&'
+        page_num = start_page_num + 1
+        while page_num < 975:
+            self.download_json_num(b_url, page_num)
+            page_num += 1
+
+    def download_json_num(self, b_url, page_num):
+        import subprocess
+        url = b_url + f'page={page_num}'
+        f_name = f'{self.date_num}_{self.src}_{page_num}.json'
+        fp = os.path.join(os.getcwd(), 'data', f_name)
+        print(f'Downloading page num {page_num}')
+        subprocess.run(['curl', url, '-o', fp])
+
 
 class FranHQ(DataGo):
     # 공정거래위원회_가맹정보_가맹본부 일반정보 상세 제공 서비스
@@ -163,15 +201,25 @@ class Bohum(DataGo):
         self.p['numOfRows'] = 100000
 
 
+class Tongshin(DataGo):
+    # 공정거래위원회_통신판매사업자 등록상세 제공 조회 서비스
+    def __init__(self, date_num='', work_dir='data'):
+        super().__init__(date_num, work_dir)
+        self.src = 'tongshin'
+        self.api_url = 'https://apis.data.go.kr/1130000/MllBsDtl_1Service/getMllBsInfoDetail_1'
+
+
 class DataGoApi:
     def __init__(self, date_n=None, work_dir='data'):
         if date_n is None:
             date_n = datetime.datetime.now().strftime('%m%d_%H%M')
         self.date_n = date_n
-        self.b = Bohum(self.date_n, work_dir)
+        self.c_bohum = Bohum(self.date_n, work_dir)
+        self.c_tong = Tongshin(self.date_n, work_dir)
         self.brand = FranBrand(self.date_n, work_dir)
         self.hq_addr = FranHQ(self.date_n, work_dir)
         self.branch = FranBranch(self.date_n, work_dir)
+
         self.card = CardFranchise(self.date_n, work_dir)
         self.hqh = FranHQHistory(self.date_n, work_dir)
 
@@ -187,8 +235,8 @@ class DataGoApi:
 
     def download(self, work_dir='data'):
         self.mk_dir(work_dir)
-        self.b.download()
-        self.card.download()
+        self.c_bohum.download()
+        self.c_tong.download()
         self.download_fran_info()
 
     def download_fran_branch_count(self):
@@ -214,8 +262,9 @@ class DataGoApi:
 if __name__ == '__main__':
     d_num = datetime.datetime.now().strftime('%m%d_%H%M')
     c = DataGoApi(d_num)
-    c.card.download()
-    print('a')
-    # c.download_fran_info()
-    # c.download()
+
+    #c.download_fran_info()
+    #c.download()
     #c.get_updated('0628_1954', d_num)
+    card = CardFranchise()
+    card.download_json(973)

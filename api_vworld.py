@@ -202,6 +202,6 @@ if __name__ == '__main__':
     print(b.get_result())
     '''
     b = VworldFran()
-    k = '원익엘앤디'
+    k = 'CU'
     b.call_api(k)
     print(b.get_result())
