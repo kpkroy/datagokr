@@ -1,6 +1,7 @@
 from api_common import ApiBlueprint
 import requests
 import os
+import json
 
 
 class VworldXy(ApiBlueprint):
@@ -42,25 +43,31 @@ class VworldXy(ApiBlueprint):
 
         response = requests.get(self.api_url, params=self.p)
         self.quota_count += 1
-        try:
-            self.current_result = response.json()
-        except Exception as e:
-            print(f'Request Parsing Error : {e}')
-            self.error_list.append(e)
+        self.set_current_result_to(response)
 
         if not self.is_ok():
             self.p['type'] = self.alt_type.get(j_type)
             response = requests.get(self.api_url, params=self.p)
             self.quota_count += 1
+            self.set_current_result_to(response)
+
+    def set_current_result_to(self, response):
+        try:
             self.current_result = response.json()
+        except Exception as e:
+            print(f'Request Parsing Error : {e}')
+            try:
+                self.current_result = json.loads(response.text.replace('\n', ' '))
+            except:
+                self.current_result = None
 
     def is_ok(self) -> bool:
         try:
             if self.current_result['response']['status'] == 'OK':
                 return True
-            return False
         except Exception as e:
-            return False
+            pass
+        return False
 
     def has_result(self):
         if self.is_ok():
@@ -88,7 +95,10 @@ class VworldXy(ApiBlueprint):
     def get_depth3(self):
         if self.current_result['response']['refined']['structure']['level3']:
             return self.current_result['response']['refined']['structure']['level3']
-        return self.current_result['response']['refined']['structure']['level4A']
+        if self.current_result['response']['refined']['structure']['level4A']:
+            return self.current_result['response']['refined']['structure']['level4A']
+        if self.current_result['response']['refined']['structure']['level4L']:
+            return self.current_result['response']['refined']['structure']['level4L']
 
     def get_result(self, idx=0):
         if self.has_result():
@@ -195,13 +205,14 @@ class VworldFran(ApiBlueprint):
 
 
 if __name__ == '__main__':
-    '''
+
     b = VworldXy()
-    k = '경상남도 창녕군 대합면 등지리 888'
-    b.call_api(k, j_type='parcel')
+    k = '서울시 성북구 인촌로 8길 61'
+    b.call_api(k, j_type='road')
     print(b.get_result())
     '''
     b = VworldFran()
     k = 'CU'
     b.call_api(k)
     print(b.get_result())
+    '''

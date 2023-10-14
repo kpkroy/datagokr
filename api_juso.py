@@ -11,12 +11,12 @@ class JusoAddr(ApiBlueprint):
         self.api_url = 'https://www.juso.go.kr/addrlink/addrLinkApi.do?'
         self.p = {'confmKey': self.token, 'resultType': 'json', 'countPerPage': 10}
         self.current_result = None
-        self.use_cols = ['admCd', 'siNm', 'sggNm', 'emdNm', 'bdNm', 'jibunAddr', 'roadAddr', 'detBdNmList']
+        self.use_cols = ['admCd', 'siNm', 'sggNm', 'emdNm', 'bdNm', 'jibunAddr', 'roadAddr', 'detBdNmList', 'zipNo']
         self.error_list = []
         self.param_xy = ['admCd', 'rnMgtSn', 'udrtYn', 'buldMnnm', 'buldSlno']
         self.col_rename = {'admCd': 'region_code', 'siNm': 'depth1', 'sggNm': 'depth2', 'emdNm': 'depth3',
                            'bdNm': 'title', 'jibunAddr': 'parcel', 'roadAddr': 'road', 'detBdNmList': 'category',
-                           'x': 'x', 'y': 'y', 'src': 'src'}
+                           'x': 'x', 'y': 'y', 'src': 'src', 'zipNo': 'zone_no'}
 
     def call_api(self, juso: str):
         self.p['keyword'] = juso

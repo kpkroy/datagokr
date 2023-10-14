@@ -13,7 +13,7 @@ class KakaoApi(ApiBlueprint):
         self.use_cols = ['x', 'y']
         self.two_depth_cols = {'address': ['address_name', 'b_code', 'region_1depth_name', 'region_2depth_name',
                                            'region_3depth_name'],
-                               'road_address': ['address_name', 'building_name']}
+                               'road_address': ['address_name', 'building_name', 'zone_no']}
         self.col_rename = {'road_address_address_name': 'road',
                            'road_address_building_name': 'title',
                            'address_address_name': 'parcel',
@@ -21,7 +21,8 @@ class KakaoApi(ApiBlueprint):
                            'address_region_1depth_name': 'depth1',
                            'address_region_2depth_name': 'depth2',
                            'address_region_3depth_name': 'depth3',
-                           'x': 'x', 'y': 'y', 'category': 'category', 'src': 'src'}
+                           'x': 'x', 'y': 'y', 'category': 'category', 'src': 'src',
+                           'road_address_zone_no': 'zone_no'}
         self.src = 'kakao'
 
     def use_key(self, key_val):
@@ -67,6 +68,8 @@ class KakaoApi(ApiBlueprint):
     def call_api(self, addr):
         self.current_result = self.api.search_address(addr)
         self.quota_count += 1
+        if self.quota_count % 100 == 0:
+            print(f'KAKAO QUTOA {self.quota_count}')
 
     def call_api_cleansed(self, addr):
         pass
@@ -84,8 +87,43 @@ class KakaoApi(ApiBlueprint):
             return False
 
 
+class KakaoKeyword(KakaoApi):
+    def __init__(self):
+        super().__init__()
+        self.use_cols = ['x', 'y', 'address_name', 'category_group_name', 'phone', 'place_name', 'road_address_name']
+        self.col_rename = {'x': 'x', 'y': 'y', 'address_name': 'parcel', 'road_address_name': 'road',
+                           'place_name': 'title', 'phone': 'company_tel', 'category_group_name': 'category'}
+
+    def call_api(self, query):
+        self.current_result = self.api.search_keyword(query)
+        self.quota_count += 1
+        if self.quota_count % 100 == 0:
+            print(f'KAKAO QUTOA {self.quota_count}')
+
+
+class KakaoApiXy(KakaoApi):
+    def __init__(self):
+        super().__init__()
+        self.two_depth_cols = {'address': ['address_name', 'code', 'region_1depth_name',
+                                           'region_2depth_name',
+                                           'region_3depth_name'],
+                               'road_address': ['address_name', 'building_name', 'zone_no']}
+
+    def call_api(self, addr):
+        self.current_result = self.api.search_address(addr)
+        self.quota_count += 1
+        if self.quota_count % 100 == 0:
+            print(f'KAKAO QUTOA {self.quota_count}')
+
+
 if __name__ == '__main__':
+    '''
     ka = KakaoApi()
-    ka.call_api('인천 연수구 청학동 567-4')
+    ka.call_api('군서면만곡리 5-1, -2')
     print(ka.get_result())
+    '''
+
+    kw = KakaoKeyword()
+    kw.call_api('애니골주유소')
+    print(kw.get_result())
 

@@ -8,6 +8,7 @@ import argparse
 import helper as h
 from urllib3.util.retry import Retry
 from requests.adapters import HTTPAdapter
+import json
 
 
 class DataGo:
@@ -111,27 +112,100 @@ class CardFranchise(DataGo):
     # 코나아이: I0000001    # 한국간편결제진흥원: I0000002    # 신한카드: I0000003    # 한국조폐공사: I0000004    # KT: I0000005    # 농협은행: I0000006    # 광주은행: I0000007    # 대구은행: I0000008    # ITS&G: I0000009    # NICE 정보통신: I0000010    # KIS 정보통신: I0000011    # 인조이웍스: I0000012    # KIS 정보통신(2): I0000014
     def __init__(self, date_num='', work_dir='data'):
         super().__init__(date_num, work_dir)
-        self.page_name = 'page'
-        self.page_per_name = 'perPage'
-        self.p = {'serviceKey': self.token, self.page_per_name: 100}
         self.src = 'card_fran'
         self.api_url = 'https://apis.data.go.kr/B190001/localFranchises/franchise'
+        self.page_name = 'page'
+        self.page_per_name = 'perPage'
+        self.per_page = 5000
+        self.b_url = f'{self.api_url}?serviceKey={self.token}&{self.page_per_name}={self.per_page}&'
 
-    def download_json(self, start_page_num=0):
-        per_page = 5000
-        b_url = f'https://apis.data.go.kr/B190001/localFranchises/franchise?serviceKey=RPhzV1mq7cMIwWp4intcHUvyvIQKhxPCCIbtbna1FfD23yFJFnbktcEVbX%2FauQgrruR2bWz0bhom1lGPjJdg6Q%3D%3D&perPage={per_page}&'
+    def download_all(self, start_page_num=0):
+        failed_page_num = []
         page_num = start_page_num + 1
-        while page_num < 975:
-            self.download_json_num(b_url, page_num)
+        while page_num < 990:           # automatically end at page num 990
+            is_end = self.download_json_num(page_num)
             page_num += 1
+            if is_end:
+                break                   # end if the result data count is between 0 and 5000
+            if is_end is None:
+                failed_page_num.append(page_num)
+        for page_num in failed_page_num:
+            print(f'Redoing page num {page_num}')
+            is_end = self.download_json_num(page_num)
 
-    def download_json_num(self, b_url, page_num):
+    def end_of_total_result(self, data):
+        if data.get('currentCount') < 5000:
+            return True
+        if data.get('currentCount') == 5000:
+            return False
+
+    def download_json_num(self, page_num):
         import subprocess
-        url = b_url + f'page={page_num}'
+        url = self.b_url + f'{self.page_name}={page_num}'
         f_name = f'{self.date_num}_{self.src}_{page_num}.json'
-        fp = os.path.join(os.getcwd(), 'data', f_name)
+        fp = os.path.join(os.getcwd(), 'data', self.src, f_name)
         print(f'Downloading page num {page_num}')
         subprocess.run(['curl', url, '-o', fp])
+        try:
+            with open(fp, 'r', encoding='utf-8-sig') as j:
+                data = json.load(j)
+            return self.end_of_total_result(data)
+        except Exception as e:
+            print(e)
+        return None
+
+    def download_updated_date(self, date_num):
+        pass
+
+
+class CorpOutlineFile(DataGo):
+    # 법인등록번호, 법인명을 통하여 기업의 법인영문명, 기업대표자성명, 사업자등록번호 등을 조회하는 기업개요조회 기능
+    def __init__(self, date_num='', work_dir='data'):
+        super().__init__(date_num, work_dir)
+        self.page_name = 'pageNo'
+        self.page_per_name = 'numOfRows'
+        self.per_page = 5000
+        self.src = 'corp_outline'
+        self.api_url = 'https://apis.data.go.kr/1160100/service/GetCorpBasicInfoService_V2/getCorpOutline_V2'
+        self.b_url = f'{self.api_url}?serviceKey={self.token}&resultType=json&{self.page_per_name}={self.per_page}&'
+
+    def download_all(self, start_page_num=0):
+        failed_page_num = []
+        page_num = start_page_num + 1
+        f_csv = f'{self.date_num}_{self.src}.csv'
+        fp = os.path.join(os.getcwd(), 'data', self.src, f_csv)
+
+        while page_num < 990:                       # max page num 990
+            df = self.download_json_num(page_num)
+            if df is None:
+                failed_page_num.append(page_num)
+            else:
+                if len(df) > 0:
+                    if os.path.isfile(fp):
+                        df.to_csv(fp, encoding='utf-8-sig', mode='a', header=False, index=False)
+                    else:
+                        df.to_csv(fp, encoding='utf-8-sig', index=False)
+                page_num += 1
+                if len(df) < self.per_page:
+                    break  # end if the result data count is between 0 and 5000
+        for page_num in failed_page_num:
+            print(f'Redoing page num {page_num}')
+            is_end = self.download_json_num(page_num)
+
+    def download_json_num(self, page_num):
+        import subprocess
+        url = self.b_url + f'{self.page_name}={page_num}'
+        f_name = f'{self.date_num}_{self.src}_{page_num}.json'
+        fp = os.path.join(os.getcwd(), 'data', self.src, f_name)
+        print(f'Downloading page num {page_num}')
+        subprocess.run(['curl', url, '-o', fp])
+        try:
+            with open(fp, 'r', encoding='utf-8-sig') as j:
+                data = json.load(j)
+            return pd.DataFrame(data['response']['body']['items']['item'])
+        except Exception as e:
+            print(e)
+        return None
 
 
 class FranHQ(DataGo):
@@ -209,6 +283,16 @@ class Tongshin(DataGo):
         self.api_url = 'https://apis.data.go.kr/1130000/MllBsDtl_1Service/getMllBsInfoDetail_1'
 
 
+class CorpOutline(DataGo):
+    # 법인등록번호, 법인명을 통하여 기업의 법인영문명, 기업대표자성명, 사업자등록번호 등을 조회하는 기업개요조회 기능
+    def __init__(self, date_num='', work_dir='data'):
+        super().__init__(date_num, work_dir)
+        self.src = 'corpOutline'
+        self.api_url = 'https://apis.data.go.kr/1160100/service/GetCorpBasicInfoService_V2/getCorpOutline_V2'
+        self.p['numOfRows'] = 500
+
+
+
 class DataGoApi:
     def __init__(self, date_n=None, work_dir='data'):
         if date_n is None:
@@ -216,6 +300,7 @@ class DataGoApi:
         self.date_n = date_n
         self.c_bohum = Bohum(self.date_n, work_dir)
         self.c_tong = Tongshin(self.date_n, work_dir)
+        self.co = CorpOutline(self.date_n, work_dir)
         self.brand = FranBrand(self.date_n, work_dir)
         self.hq_addr = FranHQ(self.date_n, work_dir)
         self.branch = FranBranch(self.date_n, work_dir)
@@ -233,11 +318,12 @@ class DataGoApi:
         self.brand.p['yr'] = year
         self.hq_addr.p['yr'] = year
 
-    def download(self, work_dir='data'):
+    def download_brno(self, work_dir='data'):
         self.mk_dir(work_dir)
         self.c_bohum.download()
         self.c_tong.download()
-        self.download_fran_info()
+        self.card.download_all()
+        self.co.download()
 
     def download_fran_branch_count(self):
         for y in range(2017, 2024):
@@ -254,17 +340,19 @@ class DataGoApi:
         h.rm_duplicates_from_file(self.brand.get_fpath(), sort_by=['yr'], drop_duplicates_by=['brno', 'brandNm'])
 
     def get_updated(self, prev_num, now_num=None):
-        self.b.get_update(prev_num, now_num)
+        self.c_bohum.get_update(prev_num, now_num)
         self.brand.get_update(prev_num, now_num)
         self.hq_addr.get_update(prev_num, now_num)
 
 
 if __name__ == '__main__':
     d_num = datetime.datetime.now().strftime('%m%d_%H%M')
-    c = DataGoApi(d_num)
 
-    #c.download_fran_info()
-    #c.download()
-    #c.get_updated('0628_1954', d_num)
-    card = CardFranchise()
-    card.download_json(973)
+    #c = DataGoApi(d_num)
+    #card = CardFranchise()
+    # co = CorpOutline(d_num, 'data')
+    co = CorpOutlineFile(d_num, 'data')
+    co.download_all()
+
+    # todo : 대기업 fran 돌려서 headquarter 받기
+    # 통신업체

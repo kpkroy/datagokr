@@ -47,7 +47,7 @@ def consolidate_and_export(rfp: list, out_fp):
     df['refined'].fillna(df['road'], inplace=True)
     df['refined'].fillna(df['parcel'], inplace=True)
     df = df.sort_values(by=['refined', 'region_code'], na_position='last').drop_duplicates(subset='id', keep='first')
-    df.to_csv(out_fp, encoding='utf-8-sig')
+    df.to_csv(out_fp, encoding='utf-8-sig', index=False)
 
 
 def get_now_time():
@@ -85,12 +85,16 @@ def rm_duplicates_from_file(fp, sort_by, drop_duplicates_by):
 
 def add_branch_name_col():
     d_types = {'id': int, 'brno': float, 'company_name': 'string', 'addr': 'string', 'fran': 'string',
-               'cate_name': 'string', 'src_from': 'string'}
+               'cate_name': 'string', 'src_from': 'string', 'fran_id': 'string'}
+    na_values = {
+        'fran_id': ['']  # Here, an empty string in the 'fran_id' column will be converted to NaN
+    }
     df = pd.read_csv(os.path.join('data', 'brno_companies.txt'), encoding='utf-8-sig', delimiter='|',
-                     usecols=list(d_types.keys()), dtype=d_types)
+                     usecols=list(d_types.keys()), dtype=d_types, na_values=na_values)
     dff = df[(df['fran'].notna()) & (df['company_name'].notna())]
     dff['fran_branch_name'] = dff.apply(lambda row: get_branch_name_only(row['company_name'], row['fran']), axis=1)
-    dff = dff[['id', 'brno', 'company_name', 'fran', 'fran_branch_name']]
+    dff = dff[['id', 'brno', 'company_name', 'fran', 'fran_id', 'fran_branch_name']]
+    dff.rename(columns={'id': 'brno_company_id'}, inplace=True)
     dff.to_csv('data//brno_branch_info.csv', encoding='utf-8-sig', index=False)
 
 
@@ -106,64 +110,32 @@ def get_branch_name_only(company_name: str, fran: str):
             pattern = r'[^\w\s]|{}'.format(fran)  # Using str.format()
             result = re.split(pattern, company_name)[-1]
             if result:
-                result = re.sub(r'[^\w\s]', '', result)
+                result = result.strip()
                 if result != company_name:
                     print(f'company_name: {company_name} result {result}')
                     return result
     return None
 
 
-def merge_card_fran_json():
-    fps = get_file_path_list_with_suffix('data', '.json')
-    rdfs = []
-    for fp in fps:
-        with open(fp, 'r', encoding='utf-8-sig') as j:
-            data = json.load(j)
-        rdfs.append(pd.DataFrame(data.get('data')))
-    rdf = pd.concat(rdfs)
-    rdf.to_csv('data/all_card_fran.csv', encoding='utf-8-sig', index=False)
+def make_b_code_all_():
+    q = pd.read_csv('data/bcode_all.csv', encoding='utf-8-sig')
+    q[['depth1', 'depth2', 'depth3']] = q['법정동명'].apply(split_string)
+    q.to_csv('data/bcode_split.csv', encoding='utf-8-sig', index=False)
 
 
-def get_empty_addresses_from():
-
-    brn = pd.read_csv('data/brno_companies.txt', encoding='utf-8-sig', delimiter='|')
-    brn_j = pd.read_csv('data/brno_juso_result.csv', encoding='utf-8-sig')
-    j_use = ['id', 'brno', 'region_code', 'depth1', 'depth2', 'depth3', 'x', 'y', 'road', 'parcel', 'refined', 'type',
-             'src']
-    brn_j = brn_j[j_use]
-    all_card = pd.read_csv('data/all_card_fran.csv', encoding='utf-8-sig')
-
-    # brn_j should have rows that has value in column 'x'
-    # from brn, select rows that does not exist in brn_j. use column 'id' for this.
-    # create a new dataframe by inner joining the selected rows with all_card, using column 'brno'
-    # Filter brn_j to only have rows with non-null values in the 'x' column
-    brn_j = brn_j[brn_j['x'].notna()]
-
-    # Get IDs that are in brn but not in brn_j
-    ids_not_in_brn_j = set(brn['id']) - set(brn_j['id'])
-
-    # Filter rows from brn based on these IDs
-    selected_brn_rows = brn[brn['id'].isin(ids_not_in_brn_j)]
-
-    # Inner join selected rows with all_card on 'brno'
-    result_df = selected_brn_rows.merge(all_card, on='brno', how='inner')
-    use_cols = ['id', 'brno', 'company_name', 'frcs_nm', 'frcs_addr', 'lat', 'lot']
-    result_df = result_df[use_cols]
-    recol = {'frcs_addr': 'addr'}
-    result_df.rename(recol, inplace=True)
-    result_df = result_df.sort_values(by=['frcs_addr', 'lat'], na_position='last').drop_duplicates(subset='id', keep='first')
-    result_df_notna = result_df[result_df['lat'].notna()]
-    result_df_notna.to_csv('data/brno_new_hasxy.csv', encoding='utf-8-sig', index=False)    # only region code missing
-    result_df_na = result_df[result_df['lat'].isna()]
-    result_df_na.to_csv('data/brno_new_noxy.csv', encoding='utf-8-sig', index=False)  # must get xy as well
-    result_df.to_csv('data/brno_new.csv', encoding='utf-8-sig', index=False)
+def split_string(s):
+    parts = s.split()
+    a = parts[0] if len(parts) > 0 else None
+    if len(parts) > 2:
+        b = ' '.join(parts[1:-1])
+        c = parts[-1]
+    elif len(parts) == 2:
+        b = parts[1]
+        c = None
+    else:
+        b, c = None, None
+    return pd.Series([a, b, c], index=['a', 'b', 'c'])
 
 
 if __name__ == '__main__':
-    rfp = get_file_path_list_with_suffix('data//b_code', 'b_code_added.csv')
-    dfs = [pd.read_csv(x, encoding='utf-8-sig') for x in rfp]
-    df = pd.concat(dfs)
-    df = df.sort_values(by=['geo_lat', 'region_code'], na_position='last').drop_duplicates(subset='id', keep='first')
-    df.to_csv('data//comp_b_code', encoding='utf-8-sig', index=False)
-
-
+    pass
