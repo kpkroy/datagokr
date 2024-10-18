@@ -22,42 +22,45 @@ class DataGo:
         self.page_name = 'pageNo'
         self.page_per_name = 'numOfRows'
         self.p = {'serviceKey': self.token, self.page_per_name: 10000, 'resultType': 'json'}
-
-    def get_elapsed(self):
-        pass
+        self.session = requests.Session()
+        retry = Retry(connect=3, backoff_factor=0.5)
+        adapter = HTTPAdapter(max_retries=retry)
+        self.session.mount('http://', adapter)
+        self.session.mount('https://', adapter)
 
     def download(self, start_page_num=0):
         page_num = start_page_num
         df = pd.DataFrame()
-        session = requests.Session()
-        retry = Retry(connect=3, backoff_factor=0.5)
-        adapter = HTTPAdapter(max_retries=retry)
-        session.mount('http://', adapter)
-        session.mount('https://', adapter)
-
         while True:
             page_num += 1
             self.p[self.page_name] = page_num
-            req = session.get(self.api_url, params=self.p)
-            new_df = self.to_dataframe(req)
+            req = self.session.get(self.api_url, params=self.p)
+            new_df = self.format_to_dataframe(req)
             df = pd.concat([df, new_df])
             print(f'....[{self.src}] - {page_num}: {len(new_df)} rows downloaded')
             if len(new_df) < self.p[self.page_per_name]:
                 break
         self.export_to_work_dir(df)
 
-    def download_(self, start_page_num=0):
+    def download_csv(self, start_page_num=0):
         page_num = start_page_num
         df = pd.DataFrame()
+        param = self.p.copy()
         while True:
             page_num += 1
-            self.p[self.page_name] = page_num
-            new_df = self.get_response()
+            new_df = self.download_a_page_to_df(page_num)
             df = pd.concat([df, new_df])
-            print(f'....[{self.src}] - {page_num}: {len(new_df)} rows downloaded')
             if len(new_df) < self.p[self.page_per_name]:
                 break
         self.export_to_work_dir(df)
+
+    def download_a_page_to_df(self, page_num):
+        param = self.p.copy()
+        param[self.page_name] = page_num
+        req = self.session.get(self.api_url, params=param)
+        new_df = self.format_to_dataframe(req)
+        print(f'....[{self.src}] - {page_num}: {len(new_df)} rows downloaded')
+        return new_df
 
     def get_update(self, prev_num, now_num=None):
         if now_num is None:
@@ -77,14 +80,14 @@ class DataGo:
             time.sleep(2)
             try:
                 req = requests.get(self.api_url, params=self.p)
-                return self.to_dataframe(req)
+                return self.format_to_dataframe(req)
             except Exception as e:
                 print(e)
                 retry_count += 1
                 time.sleep(2)
         return pd.DataFrame()
 
-    def to_dataframe(self, req):
+    def format_to_dataframe(self, req):
         if self.p['resultType'] == 'json':
             return pd.DataFrame.from_dict(req.json().get('items'))
         elif self.p['resultType'] == 'xml':
@@ -156,6 +159,33 @@ class CardFranchise(DataGo):
 
     def download_updated_date(self, date_num):
         pass
+
+
+class Bohum(DataGo):
+    # 목적 : fran / none fran 등 모든 업체 사업자등록번호
+    def __init__(self, date_num='', work_dir='data'):
+        super().__init__(date_num, work_dir)
+        self.src = 'bohom'
+        self.api_url = 'http://apis.data.go.kr/B490001/gySjbPstateInfoService/getGySjBoheomBsshItem'
+        self.p['resultType'] = 'xml'
+        self.p['numOfRows'] = 100
+
+
+class Tongshin(DataGo):
+    # 공정거래위원회_통신판매사업자 등록상세 제공 조회 서비스
+    def __init__(self, date_num='', work_dir='data'):
+        super().__init__(date_num, work_dir)
+        self.src = 'tongshin'
+        self.api_url = 'https://apis.data.go.kr/1130000/MllBsDtl_1Service/getMllBsInfoDetail_1'
+
+
+class CorpOutline(DataGo):
+    # 법인등록번호, 법인명을 통하여 기업의 법인영문명, 기업대표자성명, 사업자등록번호 등을 조회하는 기업개요조회 기능
+    def __init__(self, date_num='', work_dir='data'):
+        super().__init__(date_num, work_dir)
+        self.src = 'corpOutline'
+        self.api_url = 'https://apis.data.go.kr/1160100/service/GetCorpBasicInfoService_V2/getCorpOutline_V2'
+        self.p['numOfRows'] = 500
 
 
 class CorpOutlineFile(DataGo):
@@ -265,34 +295,6 @@ class BrandComp(DataGo):
         self.api_url = 'http://apis.data.go.kr/1130000/FftcBrandCompInfoService/getBrandCompInfo'
 
 
-class Bohum(DataGo):
-    # 목적 : fran / none fran 등 모든 업체 사업자등록번호
-    def __init__(self, date_num='', work_dir='data'):
-        super().__init__(date_num, work_dir)
-        self.src = 'bohom'
-        self.api_url = 'http://apis.data.go.kr/B490001/gySjbPstateInfoService/getGySjBoheomBsshItem'
-        self.p['resultType'] = 'xml'
-        self.p['numOfRows'] = 100000
-
-
-class Tongshin(DataGo):
-    # 공정거래위원회_통신판매사업자 등록상세 제공 조회 서비스
-    def __init__(self, date_num='', work_dir='data'):
-        super().__init__(date_num, work_dir)
-        self.src = 'tongshin'
-        self.api_url = 'https://apis.data.go.kr/1130000/MllBsDtl_1Service/getMllBsInfoDetail_1'
-
-
-class CorpOutline(DataGo):
-    # 법인등록번호, 법인명을 통하여 기업의 법인영문명, 기업대표자성명, 사업자등록번호 등을 조회하는 기업개요조회 기능
-    def __init__(self, date_num='', work_dir='data'):
-        super().__init__(date_num, work_dir)
-        self.src = 'corpOutline'
-        self.api_url = 'https://apis.data.go.kr/1160100/service/GetCorpBasicInfoService_V2/getCorpOutline_V2'
-        self.p['numOfRows'] = 500
-
-
-
 class DataGoApi:
     def __init__(self, date_n=None, work_dir='data'):
         if date_n is None:
@@ -308,18 +310,13 @@ class DataGoApi:
         self.card = CardFranchise(self.date_n, work_dir)
         self.hqh = FranHQHistory(self.date_n, work_dir)
 
-    def mk_dir(self, work_dir='data'):
-        wd = os.path.join(os.getcwd(), work_dir)
-        if not os.path.isdir(wd):
-            os.mkdir(wd)
-
     def set_year(self, year):
         print(f'Setting year to {year}')
         self.brand.p['yr'] = year
         self.hq_addr.p['yr'] = year
 
     def download_brno(self, work_dir='data'):
-        self.mk_dir(work_dir)
+        h.mk_dir(work_dir)
         self.c_bohum.download()
         self.c_tong.download()
         self.card.download_all()
@@ -332,7 +329,7 @@ class DataGoApi:
         h.rm_duplicates_from_file(self.branch.get_fpath(), sort_by=['yr'], drop_duplicates_by=['jngIfrmpRgsno'])
 
     def download_fran_info(self, start_year=2017, end_year=2024):
-        for y in range(2017, 2024):
+        for y in range(start_year, end_year):
             self.set_year(y)
             self.brand.download()
             self.hq_addr.download()  # Need only the last

@@ -137,5 +137,11 @@ def split_string(s):
     return pd.Series([a, b, c], index=['a', 'b', 'c'])
 
 
+def mk_dir(work_dir='data'):
+    wd = os.path.join(os.getcwd(), work_dir)
+    if not os.path.isdir(wd):
+        os.mkdir(wd)
+
+
 if __name__ == '__main__':
     pass
